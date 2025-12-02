@@ -6,7 +6,7 @@ import { HUD } from './components/HUD';
 import { TelemetryPanel } from './components/TelemetryPanel';
 import { useGesturePipeline } from './hooks/useGesturePipeline';
 import { useSliceAudio } from './hooks/useSliceAudio';
-import './app.css';
+import './index.css';
 
 function App() {
   const { status, error, videoRef } = useGesturePipeline();

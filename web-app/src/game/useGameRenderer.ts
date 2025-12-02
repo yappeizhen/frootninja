@@ -87,7 +87,9 @@ export function useGameRenderer(
       });
     };
 
-    const syncTrails = () => {
+    const syncTrails = (
+      trails = useGameStore.getState().gestureTrails
+    ) => {
       while (trailGroup.children.length) {
         const child = trailGroup.children.pop();
         if (child && child.type === 'Line') {
@@ -100,7 +102,6 @@ export function useGameRenderer(
           }
         }
       }
-      const trails = useGameStore.getState().gestureTrails;
       trails.forEach((trail) => {
         const points = trail.points.map(([x, y, z]) => new THREE.Vector3(x, y, z));
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -116,11 +117,12 @@ export function useGameRenderer(
     resize();
     window.addEventListener('resize', resize);
 
-    const unsubFruits = useGameStore.subscribe((state) => state.fruits, syncFruits);
-    const unsubTrails = useGameStore.subscribe(
-      (state) => state.gestureTrails,
-      syncTrails
-    );
+    const unsubFruits = useGameStore.subscribe((state) => {
+      syncFruits(state.fruits);
+    });
+    const unsubTrails = useGameStore.subscribe((state) => {
+      syncTrails(state.gestureTrails);
+    });
 
     let animationFrame = 0;
     let lastTime = performance.now();
