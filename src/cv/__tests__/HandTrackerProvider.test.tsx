@@ -49,7 +49,7 @@ class MockTracker implements HandTracker {
 }
 
 const TestHarness = () => {
-  const { status, frame, videoRef } = useHandData()
+  const { status, frame, videoRef, maxHands } = useHandData()
 
   useEffect(() => {
     const video = document.createElement('video')
@@ -60,6 +60,7 @@ const TestHarness = () => {
     <>
       <span data-testid="status">{status}</span>
       <span data-testid="hands">{frame?.hands.length ?? 0}</span>
+      <span data-testid="max-hands">{maxHands}</span>
     </>
   )
 }
@@ -68,7 +69,7 @@ describe('HandTrackerProvider', () => {
   it('propagates status and frame updates from the tracker', async () => {
     const tracker = new MockTracker()
     render(
-      <HandTrackerProvider factory={() => tracker}>
+      <HandTrackerProvider factory={() => tracker} maxHands={2}>
         <TestHarness />
       </HandTrackerProvider>,
     )
@@ -98,6 +99,14 @@ describe('HandTrackerProvider', () => {
               { x: 0.2, y: 0.3, z: 0 },
             ],
           },
+          {
+            handedness: 'Left',
+            score: 0.85,
+            landmarks: [
+              { x: 0.8, y: 0.2, z: 0 },
+              { x: 0.7, y: 0.3, z: 0 },
+            ],
+          },
         ],
         timestamp: 123,
         fps: 60,
@@ -105,8 +114,9 @@ describe('HandTrackerProvider', () => {
     })
 
     await waitFor(() =>
-      expect(screen.getByTestId('hands').textContent).toBe('1'),
+      expect(screen.getByTestId('hands').textContent).toBe('2'),
     )
+    expect(screen.getByTestId('max-hands').textContent).toBe('2')
   })
 })
 

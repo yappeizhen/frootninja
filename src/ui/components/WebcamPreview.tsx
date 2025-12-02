@@ -64,7 +64,7 @@ const drawLandmarks = (
 }
 
 export const WebcamPreview = () => {
-  const { frame, status, error, videoRef, restart } = useHandData()
+  const { frame, status, error, videoRef, restart, maxHands } = useHandData()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 640, height: 480 })
@@ -179,7 +179,9 @@ export const WebcamPreview = () => {
         </div>
         <div>
           <span className="preview-label">Hands</span>
-          <strong>{handsDetected}</strong>
+          <strong>
+            {handsDetected}/{maxHands}
+          </strong>
         </div>
       </footer>
     </section>

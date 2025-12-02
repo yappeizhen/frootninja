@@ -12,12 +12,13 @@ export const App = () => {
           </header>
           <p>
             Grant camera permission to boot the MediaPipe pipeline. You should see
-            the live feed on the right with hand keypoints rendered in real time.
-            This validates that gesture input is ready before we wire gameplay.
+            both hands mirrored in the live feed with keypoints rendered in real
+            time. This validates that gesture input is ready before we wire
+            gameplay.
           </p>
           <ul className="app-checklist">
             <li>Webcam stream capture</li>
-            <li>Hand landmark detection</li>
+            <li>Dual-hand landmark detection</li>
             <li>Overlay diagnostics (FPS, hands)</li>
           </ul>
         </section>

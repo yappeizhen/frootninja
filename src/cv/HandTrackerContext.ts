@@ -7,6 +7,7 @@ export interface HandTrackerContextValue {
   videoRef: (node: HTMLVideoElement | null) => void
   error: string | null
   restart: () => Promise<void>
+  maxHands: number
 }
 
 export const HandTrackerContext = createContext<HandTrackerContextValue | undefined>(

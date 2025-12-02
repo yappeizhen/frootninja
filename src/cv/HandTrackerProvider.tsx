@@ -6,9 +6,14 @@ import { HandTrackerContext, type HandTrackerContextValue } from '@/cv/HandTrack
 interface HandTrackerProviderProps {
   children: ReactNode
   factory?: () => HandTracker
+  maxHands?: number
 }
 
-export const HandTrackerProvider = ({ children, factory }: HandTrackerProviderProps) => {
+export const HandTrackerProvider = ({
+  children,
+  factory,
+  maxHands = 2,
+}: HandTrackerProviderProps) => {
   const trackerRef = useRef<HandTracker>()
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const [status, setStatus] = useState<HandTrackingStatus>('idle')
@@ -17,11 +22,11 @@ export const HandTrackerProvider = ({ children, factory }: HandTrackerProviderPr
 
   const ensureTracker = useCallback(() => {
     if (!trackerRef.current) {
-      const createTracker = factory ?? (() => createHandTracker({ maxHands: 1 }))
+      const createTracker = factory ?? (() => createHandTracker({ maxHands }))
       trackerRef.current = createTracker()
     }
     return trackerRef.current
-  }, [factory])
+  }, [factory, maxHands])
 
   const start = useCallback(async () => {
     const video = videoElementRef.current
@@ -81,8 +86,9 @@ const value = useMemo<HandTrackerContextValue>(
       videoRef: assignVideoRef,
       error,
       restart,
+      maxHands,
     }),
-    [status, frame, error, assignVideoRef, restart],
+    [status, frame, error, assignVideoRef, restart, maxHands],
   )
 
   return (

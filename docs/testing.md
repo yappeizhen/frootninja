@@ -11,11 +11,12 @@
 1. `npm run dev` and open the local URL in Chrome/Edge.
 2. Grant camera permissions when prompted. Reload if the browser blocks the request.
 3. Confirm the left information panel renders and the webcam feed appears on the right.
-4. Move your dominant hand inside the frame:
+4. Move one hand inside the frame:
    - Green skeleton and cyan/orange joints should follow your fingers closely.
-   - HUD chips should show `Status: Tracking active`, handshake count ≥ 1, and FPS around your camera frame rate (typically 30–60).
-5. Move out of frame and ensure the banner changes to “Show your hand to verify tracking”.
-6. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
+   - HUD chips should show `Status: Tracking active`, hand count ≥ 1, and FPS near your camera frame rate (typically 30–60).
+5. Bring the second hand into frame and verify the counter reads `2/2` while both skeletons render simultaneously.
+6. Move out of frame and ensure the banner changes to “Show your hand to verify tracking”.
+7. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
 
 ### Troubleshooting tips
 
