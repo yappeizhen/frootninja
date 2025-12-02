@@ -91,6 +91,7 @@ public/build/
 
 # lockfiles (if you intentionally track lockfile, remove these)
 package-lock.json
+**/package-lock.json 
 # yarn.lock
 # pnpm-lock.yaml
 
