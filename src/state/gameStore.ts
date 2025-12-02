@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GamePhase, GameState, SliceEvent } from '@/types'
+import type { GamePhase, GameState, GestureEvent, SliceEvent } from '@/types'
 
 const initialState: GameState = {
   phase: 'idle',
@@ -14,6 +14,7 @@ interface GameStore extends GameState {
   setPhase: (phase: GamePhase) => void
   setLives: (lives: number) => void
   registerSlice: (event: SliceEvent) => void
+  registerGesture: (event: GestureEvent) => void
   reset: () => void
 }
 
@@ -27,6 +28,7 @@ export const useGameStore = create<GameStore>()((set) => ({
       combo: event.scoreDelta > 0 ? state.combo + 1 : 0,
       recentSlice: event,
     })),
+  registerGesture: (event) => set({ lastGesture: event }),
   reset: () => set(initialState),
 }))
 

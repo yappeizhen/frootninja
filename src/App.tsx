@@ -1,5 +1,5 @@
 import './App.css'
-import { WebcamPreview } from '@/ui/components'
+import { GestureDebugPanel, WebcamPreview } from '@/ui/components'
 
 export const App = () => {
   return (
@@ -22,7 +22,10 @@ export const App = () => {
             <li>Overlay diagnostics (FPS, hands)</li>
           </ul>
         </section>
-        <WebcamPreview />
+        <div className="app-column">
+          <WebcamPreview />
+          <GestureDebugPanel />
+        </div>
       </div>
     </main>
   )

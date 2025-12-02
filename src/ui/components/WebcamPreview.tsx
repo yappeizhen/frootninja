@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
+import { useGestureDetection } from '@/services/useGestureDetection'
 import type { HandLandmark } from '@/types'
 
 const HAND_CONNECTIONS: [number, number][] = [
@@ -65,12 +66,17 @@ const drawLandmarks = (
 
 export const WebcamPreview = () => {
   const { frame, status, error, videoRef, restart, maxHands } = useHandData()
+  const { lastGesture } = useGestureDetection()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 640, height: 480 })
 
   const handsDetected = frame?.hands.length ?? 0
   const fpsLabel = frame ? frame.fps.toFixed(0) : '0'
+  const gestureLabel = lastGesture
+    ? `${lastGesture.hand} slice`
+    : 'Awaiting slice'
+  const gestureStrength = lastGesture ? Math.round(lastGesture.strength * 100) : 0
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
@@ -167,6 +173,10 @@ export const WebcamPreview = () => {
         ) : (
           <div className="preview-status-pill">Hand detected</div>
         )}
+        <div className="preview-gesture-chip">
+          <p>{gestureLabel}</p>
+          <span>{gestureStrength}%</span>
+        </div>
       </div>
       <footer className="preview-footer">
         <div>

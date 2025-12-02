@@ -1,3 +1,5 @@
+import type { Handedness } from './cv'
+
 export type FruitKind =
   | 'apple'
   | 'orange'
@@ -21,6 +23,18 @@ export interface SliceEvent {
   slicedAt: number
 }
 
+export type GestureType = 'slice'
+
+export interface GestureEvent {
+  id: string
+  type: GestureType
+  hand: Handedness
+  speed: number
+  strength: number
+  direction: { x: number; y: number }
+  timestamp: number
+}
+
 export interface GameState {
   phase: GamePhase
   score: number
@@ -29,5 +43,6 @@ export interface GameState {
   level: number
   activeFruits: FruitSpawn[]
   recentSlice?: SliceEvent
+  lastGesture?: GestureEvent
 }
 

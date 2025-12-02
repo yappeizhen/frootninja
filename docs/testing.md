@@ -16,7 +16,16 @@
    - HUD chips should show `Status: Tracking active`, hand count ≥ 1, and FPS near your camera frame rate (typically 30–60).
 5. Bring the second hand into frame and verify the counter reads `2/2` while both skeletons render simultaneously.
 6. Move out of frame and ensure the banner changes to “Show your hand to verify tracking”.
-7. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
+7. The Gesture Telemetry card should update whenever a slice is detected, showing hand, speed, strength (percentage), and direction. If it stays idle, increase swipe speed or lighting.
+8. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
+
+### Gesture detection sanity
+
+1. With both hands visible, perform a quick slicing motion diagonally across the frame.
+2. Watch the gesture chip in the bottom-left corner of the preview:
+   - It should update to `Left slice` or `Right slice` depending on the hand.
+   - The percentage should spike above 40% for deliberate swipes.
+3. Repeat rapidly to verify the cooldown—only one slice should register roughly every 250 ms per hand.
 
 ### Troubleshooting tips
 
