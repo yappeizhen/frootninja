@@ -1,0 +1,94 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { HandFrame, HandTrackingStatus } from '@/types'
+import { createHandTracker, type HandTracker } from '@/cv/handTracker'
+import { HandTrackerContext, type HandTrackerContextValue } from '@/cv/HandTrackerContext'
+
+interface HandTrackerProviderProps {
+  children: ReactNode
+  factory?: () => HandTracker
+}
+
+export const HandTrackerProvider = ({ children, factory }: HandTrackerProviderProps) => {
+  const trackerRef = useRef<HandTracker>()
+  const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const [status, setStatus] = useState<HandTrackingStatus>('idle')
+  const [frame, setFrame] = useState<HandFrame | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const ensureTracker = useCallback(() => {
+    if (!trackerRef.current) {
+      const createTracker = factory ?? (() => createHandTracker({ maxHands: 1 }))
+      trackerRef.current = createTracker()
+    }
+    return trackerRef.current
+  }, [factory])
+
+  const start = useCallback(async () => {
+    const video = videoElementRef.current
+    if (!video) return
+    const tracker = ensureTracker()
+    try {
+      await tracker.start(video)
+      setError(null)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unknown camera error occurred'
+      setError(message)
+    }
+  }, [ensureTracker])
+
+  const restart = useCallback(async () => {
+    trackerRef.current?.stop()
+    setFrame(null)
+    setStatus('idle')
+    await start()
+  }, [start])
+
+  const assignVideoRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoElementRef.current = node
+      if (node) {
+        void start()
+      }
+    },
+    [start],
+  )
+
+  useEffect(() => {
+    const tracker = ensureTracker()
+    const unsubscribeFrame = tracker.subscribe((nextFrame) => {
+      setFrame(nextFrame)
+    })
+    const unsubscribeStatus = tracker.onStatusChange((nextStatus) => {
+      setStatus(nextStatus)
+      if (nextStatus === 'permission-denied') {
+        setError('Camera permission denied')
+      }
+    })
+    setStatus(tracker.getStatus())
+    return () => {
+      unsubscribeFrame()
+      unsubscribeStatus()
+      tracker.stop()
+      trackerRef.current = undefined
+    }
+  }, [ensureTracker])
+
+const value = useMemo<HandTrackerContextValue>(
+    () => ({
+      status,
+      frame,
+      videoRef: assignVideoRef,
+      error,
+      restart,
+    }),
+    [status, frame, error, assignVideoRef, restart],
+  )
+
+  return (
+    <HandTrackerContext.Provider value={value}>
+      {children}
+    </HandTrackerContext.Provider>
+  )
+}
+
