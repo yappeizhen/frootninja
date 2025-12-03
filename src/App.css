@@ -759,8 +759,6 @@ h1, h2, h3 {
   width: 100%;
   height: 100%;
   z-index: 2;
-  transform: scaleX(-1);
-  transform-origin: center;
 }
 
 .playfield-fruit-canvas,
@@ -770,6 +768,8 @@ h1, h2, h3 {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  transform: scaleX(-1);
+  transform-origin: center;
 }
 
 .eyebrow, .preview-label {
