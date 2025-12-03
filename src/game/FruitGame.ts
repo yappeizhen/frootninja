@@ -161,7 +161,7 @@ export class FruitGame {
 
     const velocity = new THREE.Vector3(
       THREE.MathUtils.randFloat(-0.4, 0.4),
-      THREE.MathUtils.randFloat(2.2, 3.4),
+      THREE.MathUtils.randFloat(3.6, 5.2),
       THREE.MathUtils.randFloat(-0.2, 0.2),
     )
     const spin = new THREE.Vector3(
