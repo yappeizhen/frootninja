@@ -9,22 +9,11 @@
 }
 
 .app-grid {
-  width: min(1200px, 100%);
-  display: grid;
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-}
-
-@media (min-width: 992px) {
-  .app-grid {
-    grid-template-columns: minmax(0, 2.5fr) minmax(280px, 1fr);
-    align-items: start;
-  }
-}
-
-@media (max-width: 991px) {
-  .app-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  align-items: center;
 }
 
 .playfield-card {
@@ -36,6 +25,7 @@
   flex-direction: column;
   gap: 1rem;
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+  width: 100%;
 }
 
 .playfield-stage {
@@ -138,6 +128,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
 }
 
 .gesture-card__header {
