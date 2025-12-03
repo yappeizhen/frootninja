@@ -9,8 +9,8 @@ export interface GestureControllerConfig {
 }
 
 const defaultConfig: GestureControllerConfig = {
-  sliceSpeedThreshold: 1.6,
-  minDistance: 0.015,
+  sliceSpeedThreshold: 1.35,
+  minDistance: 0.012,
   cooldownMs: 250,
 }
 

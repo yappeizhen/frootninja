@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { GestureEvent } from '@/types'
 
-const TRAIL_LIFESPAN = 450
+const TRAIL_LIFESPAN = 500 // Slightly longer for softer feel
 
 interface GestureTrail {
   id: string
@@ -38,20 +38,35 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const now = performance.now()
+      
       trailsRef.current = trailsRef.current.filter((trail) => {
         const age = now - trail.createdAt
         const progress = age / TRAIL_LIFESPAN
         if (progress >= 1) {
           return false
         }
-        ctx.globalAlpha = 1 - progress
-        ctx.lineWidth = trail.width * dpr * (1 - progress * 0.5)
+        
+        // Soft fade out
+        ctx.globalAlpha = Math.pow(1 - progress, 2)
+        
+        const currentWidth = trail.width * dpr * (1 - Math.pow(progress, 0.5))
+        
+        ctx.lineWidth = currentWidth
         ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
         ctx.strokeStyle = trail.color
+        
+        // Glow effect
+        ctx.shadowBlur = 20 * dpr
+        ctx.shadowColor = trail.color
+        
         ctx.beginPath()
         ctx.moveTo(trail.start.x * canvas.width, trail.start.y * canvas.height)
         ctx.lineTo(trail.end.x * canvas.width, trail.end.y * canvas.height)
         ctx.stroke()
+        
+        // Reset shadow for next draw
+        ctx.shadowBlur = 0
         ctx.globalAlpha = 1
         return true
       })
@@ -69,7 +84,8 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
     if (!gesture || gesture.id === lastGestureId.current) return
     lastGestureId.current = gesture.id
 
-    const color = gesture.hand === 'Left' ? '#7dd3fc' : '#f472b6'
+    // Pastel Gummy Colors
+    const color = gesture.hand === 'Left' ? '#a0e7e5' : '#ffb7b2' // Soft Teal & Soft Salmon
     const length = 0.18 + gesture.strength * 0.35
     const endX = clamp01(gesture.origin.x + gesture.direction.x * length)
     const endY = clamp01(gesture.origin.y + gesture.direction.y * length)
@@ -80,10 +96,9 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
       start: { x: clamp01(gesture.origin.x), y: clamp01(gesture.origin.y) },
       end: { x: endX, y: endY },
       color,
-      width: 10 + gesture.strength * 6,
+      width: 15 + gesture.strength * 10, // Thicker, softer lines
     })
   }, [gesture])
 
   return <canvas ref={canvasRef} className="playfield-trail-canvas" />
 }
-
