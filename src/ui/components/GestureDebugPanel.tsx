@@ -1,27 +1,108 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useGestureDetection } from '@/services/useGestureDetection'
-
-const formatPercent = (value: number) => `${Math.round(value * 100)}%`
+import { useGameStore } from '@/state/gameStore'
 
 interface GestureDebugPanelProps {
   isOpen: boolean
   onToggle: () => void
 }
 
+const ProgressBar = ({ 
+  value, 
+  max, 
+  color, 
+  label,
+  showValue = true 
+}: { 
+  value: number
+  max: number
+  color: string
+  label: string
+  showValue?: boolean
+}) => {
+  const percent = Math.min((value / max) * 100, 100)
+  
+  return (
+    <div className="progress-stat">
+      <div className="progress-stat__header">
+        <span className="progress-stat__label">{label}</span>
+        {showValue && (
+          <span className="progress-stat__value">{value.toFixed(1)}</span>
+        )}
+      </div>
+      <div className="progress-bar">
+        <div 
+          className="progress-bar__fill" 
+          style={{ 
+            width: `${percent}%`,
+            background: color,
+            boxShadow: `0 0 12px ${color}40`
+          }} 
+        />
+        <div className="progress-bar__glow" style={{ background: color }} />
+      </div>
+    </div>
+  )
+}
+
+const DirectionIndicator = ({ x, y }: { x: number; y: number }) => {
+  const angle = Math.atan2(y, x) * (180 / Math.PI)
+  const magnitude = Math.min(Math.hypot(x, y) * 50, 40)
+  
+  return (
+    <div className="direction-indicator">
+      <div className="direction-indicator__ring" />
+      <div className="direction-indicator__ring direction-indicator__ring--inner" />
+      <div 
+        className="direction-indicator__arrow"
+        style={{ 
+          transform: `rotate(${angle}deg) translateX(${magnitude}%)`,
+        }}
+      />
+      <div className="direction-indicator__center" />
+    </div>
+  )
+}
+
 export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) => {
   const { lastGesture } = useGestureDetection()
+  const { score, combo } = useGameStore()
+  const [totalSlices, setTotalSlices] = useState(0)
+  const [maxCombo, setMaxCombo] = useState(0)
+  const [peakSpeed, setPeakSpeed] = useState(0)
+
+  useEffect(() => {
+    if (lastGesture?.type === 'slice') {
+      setTotalSlices(prev => prev + 1)
+      if (lastGesture.speed > peakSpeed) {
+        setPeakSpeed(lastGesture.speed)
+      }
+    }
+  }, [lastGesture, peakSpeed])
+
+  useEffect(() => {
+    if (combo > maxCombo) {
+      setMaxCombo(combo)
+    }
+  }, [combo, maxCombo])
 
   const summary = useMemo(() => {
-    if (!lastGesture) {
-      return null
-    }
+    if (!lastGesture) return null
     return {
-      handLabel: lastGesture.hand === 'Left' ? 'Left hand' : 'Right hand',
-      speed: lastGesture.speed.toFixed(2),
-      direction: `${lastGesture.direction.x.toFixed(2)}, ${lastGesture.direction.y.toFixed(2)}`,
-      strengthPercent: formatPercent(lastGesture.strength),
+      hand: lastGesture.hand,
+      speed: lastGesture.speed,
+      strength: lastGesture.strength,
+      direction: lastGesture.direction,
       timestamp: new Date(lastGesture.timestamp).toLocaleTimeString(),
     }
+  }, [lastGesture])
+
+  const timeSinceGesture = useMemo(() => {
+    if (!lastGesture) return null
+    const seconds = Math.floor((Date.now() - lastGesture.timestamp) / 1000)
+    if (seconds < 5) return 'Just now'
+    if (seconds < 60) return `${seconds}s ago`
+    return `${Math.floor(seconds / 60)}m ago`
   }, [lastGesture])
 
   return (
@@ -39,37 +120,89 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
       <div className="side-panel__content">
         <header className="side-panel__header">
           <p className="eyebrow">Live gestures</p>
-          <h2>Slice detection</h2>
-          <div className="gesture-pill">{lastGesture ? lastGesture.type : 'idle'}</div>
+          <h2>Slice Analytics</h2>
+          <div className={`gesture-pill ${lastGesture?.type === 'slice' ? 'gesture-pill--active' : ''}`}>
+            {lastGesture ? lastGesture.type : 'idle'}
+          </div>
         </header>
+
+        {/* Session Stats */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-card__value">{score}</span>
+            <span className="stat-card__label">Score</span>
+          </div>
+          <div className="stat-card stat-card--accent">
+            <span className="stat-card__value">{combo}</span>
+            <span className="stat-card__label">Combo</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__value">{totalSlices}</span>
+            <span className="stat-card__label">Slices</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-card__value">{maxCombo}</span>
+            <span className="stat-card__label">Best</span>
+          </div>
+        </div>
         
         {summary ? (
-          <div className="side-panel__grid">
-            <div className="side-panel__stat">
-              <span className="preview-label">Hand</span>
-              <strong>{summary.handLabel}</strong>
+          <>
+            {/* Hand Indicator */}
+            <div className="hand-indicator">
+              <div className={`hand-icon ${summary.hand === 'Left' ? 'hand-icon--active' : ''}`}>
+                <span>L</span>
+              </div>
+              <div className="hand-indicator__divider" />
+              <div className={`hand-icon ${summary.hand === 'Right' ? 'hand-icon--active' : ''}`}>
+                <span>R</span>
+              </div>
             </div>
-            <div className="side-panel__stat">
-              <span className="preview-label">Speed</span>
-              <strong>{summary.speed}</strong>
+
+            {/* Progress Meters */}
+            <div className="meters-section">
+              <ProgressBar 
+                value={summary.speed} 
+                max={2.5} 
+                color="var(--pastel-mint)"
+                label="Speed"
+              />
+              <ProgressBar 
+                value={summary.strength * 100} 
+                max={100} 
+                color="var(--pastel-rose)"
+                label="Power"
+              />
+              <ProgressBar 
+                value={peakSpeed} 
+                max={3} 
+                color="var(--pastel-peach)"
+                label="Peak Speed"
+              />
             </div>
-            <div className="side-panel__stat">
-              <span className="preview-label">Strength</span>
-              <strong>{summary.strengthPercent}</strong>
+
+            {/* Direction Compass */}
+            <div className="direction-section">
+              <span className="section-label">Slice Direction</span>
+              <DirectionIndicator x={summary.direction.x} y={summary.direction.y} />
             </div>
-            <div className="side-panel__stat">
-              <span className="preview-label">Direction</span>
-              <strong>{summary.direction}</strong>
+
+            {/* Timestamp */}
+            <div className="timestamp-badge">
+              <span className="timestamp-badge__dot" />
+              <span>{timeSinceGesture}</span>
             </div>
-            <div className="side-panel__stat">
-              <span className="preview-label">Detected</span>
-              <strong>{summary.timestamp}</strong>
+          </>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state__icon">👋</div>
+            <p className="empty-state__text">
+              Swipe your hand quickly to trigger a slice gesture
+            </p>
+            <div className="empty-state__hint">
+              Move fast for best detection
             </div>
           </div>
-        ) : (
-          <p className="side-panel__empty">
-            Swipe quickly to trigger a slice gesture.
-          </p>
         )}
       </div>
     </aside>
