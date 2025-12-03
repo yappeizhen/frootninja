@@ -1,5 +1,4 @@
-export * from './WebcamPreview'
+export * from './Playfield'
 export * from './GestureDebugPanel'
-export * from './FruitCanvas'
 export * from './GestureTrailCanvas'
 

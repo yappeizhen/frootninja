@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
-import { GestureTrailCanvas } from '@/ui/components'
+import { GestureTrailCanvas } from '@/ui/components/GestureTrailCanvas'
 
-export const FruitCanvas = () => {
+export const FruitLayer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<FruitGame>()
+  const resizeObserverRef = useRef<ResizeObserver>()
   const { lastGesture } = useGestureDetection()
 
   useEffect(() => {
@@ -13,6 +14,7 @@ export const FruitCanvas = () => {
     if (!canvas) return
     const game = new FruitGame(canvas)
     game.start()
+    game.syncViewport()
     gameRef.current = game
     return () => {
       game.dispose()
@@ -21,24 +23,28 @@ export const FruitCanvas = () => {
   }, [])
 
   useEffect(() => {
+    const canvas = canvasRef.current
+    const game = gameRef.current
+    if (!canvas || !game) return
+    const target = canvas.parentElement ?? canvas
+    const observer = new ResizeObserver(() => {
+      game.syncViewport()
+    })
+    observer.observe(target)
+    resizeObserverRef.current = observer
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
     if (!lastGesture) return
     gameRef.current?.handleGesture(lastGesture)
   }, [lastGesture])
 
   return (
-    <section className="game-card">
-      <header className="game-card__header">
-        <div>
-          <p className="eyebrow">Three.js</p>
-          <h2>Fruit playground</h2>
-        </div>
-      </header>
-      <div className="game-stage">
-        <canvas ref={canvasRef} className="game-canvas" />
-        <GestureTrailCanvas gesture={lastGesture ?? null} />
-      </div>
-      <p className="game-hint">Swipe fast to slice the next fruit spawn.</p>
-    </section>
+    <div className="playfield-overlay">
+      <canvas ref={canvasRef} className="playfield-fruit-canvas" />
+      <GestureTrailCanvas gesture={lastGesture ?? null} />
+    </div>
   )
 }
 

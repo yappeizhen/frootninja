@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
-import { useGestureDetection } from '@/services/useGestureDetection'
 import type { HandLandmark } from '@/types'
+import { FruitLayer } from '@/ui/components/FruitCanvas'
 
 const HAND_CONNECTIONS: [number, number][] = [
   [0, 1],
@@ -64,19 +64,14 @@ const drawLandmarks = (
   })
 }
 
-export const WebcamPreview = () => {
+export const Playfield = () => {
   const { frame, status, error, videoRef, restart, maxHands } = useHandData()
-  const { lastGesture } = useGestureDetection()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 640, height: 480 })
 
   const handsDetected = frame?.hands.length ?? 0
   const fpsLabel = frame ? frame.fps.toFixed(0) : '0'
-  const gestureLabel = lastGesture
-    ? `${lastGesture.hand} slice`
-    : 'Awaiting slice'
-  const gestureStrength = lastGesture ? Math.round(lastGesture.strength * 100) : 0
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
@@ -151,18 +146,19 @@ export const WebcamPreview = () => {
   }, [status, error, handsDetected])
 
   return (
-    <section className="preview-card">
-      <div className="preview-video-wrapper">
+    <section className="playfield-card">
+      <div className="playfield-stage">
         <video
           ref={handleVideoRef}
-          className="preview-video"
+          className="playfield-video"
           autoPlay
           muted
           playsInline
         />
-        <canvas ref={canvasRef} className="preview-canvas" />
+        <canvas ref={canvasRef} className="playfield-landmarks" />
+        <FruitLayer />
         {banner ? (
-          <div className={`preview-banner preview-banner--${banner.tone}`}>
+          <div className={`playfield-banner playfield-banner--${banner.tone}`}>
             <span>{banner.message}</span>
             {banner.action ? (
               <button type="button" onClick={restart}>
@@ -171,24 +167,20 @@ export const WebcamPreview = () => {
             ) : null}
           </div>
         ) : (
-          <div className="preview-status-pill">Hand detected</div>
+          <div className="playfield-status-pill">Hands detected</div>
         )}
-        <div className="preview-gesture-chip">
-          <p>{gestureLabel}</p>
-          <span>{gestureStrength}%</span>
-        </div>
       </div>
-      <footer className="preview-footer">
+      <footer className="playfield-footer">
         <div>
-          <span className="preview-label">Status</span>
+          <span className="playfield-label">Status</span>
           <strong>{STATUS_COPY[status] ?? status}</strong>
         </div>
         <div>
-          <span className="preview-label">FPS</span>
+          <span className="playfield-label">FPS</span>
           <strong>{fpsLabel}</strong>
         </div>
         <div>
-          <span className="preview-label">Hands</span>
+          <span className="playfield-label">Hands</span>
           <strong>
             {handsDetected}/{maxHands}
           </strong>

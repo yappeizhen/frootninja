@@ -84,6 +84,6 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
     })
   }, [gesture])
 
-  return <canvas ref={canvasRef} className="game-trail-canvas" />
+  return <canvas ref={canvasRef} className="playfield-trail-canvas" />
 }
 

@@ -90,6 +90,10 @@ export class FruitGame {
     this.sliceFruit(candidate, gesture)
   }
 
+  syncViewport() {
+    this.handleResize()
+  }
+
   private tick = () => {
     const now = performance.now()
     const delta = (now - this.lastTime) / 1000
@@ -243,7 +247,8 @@ export class FruitGame {
   }
 
   private handleResize = () => {
-    const { clientWidth, clientHeight } = this.canvas
+    const host = this.canvas.parentElement ?? this.canvas
+    const { clientWidth, clientHeight } = host
     if (clientWidth === 0 || clientHeight === 0) return
     this.camera.aspect = clientWidth / clientHeight
     this.camera.updateProjectionMatrix()
