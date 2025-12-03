@@ -1,13 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
+import { useGameStore } from '@/state/gameStore'
+import { usePlayerStore } from '@/state/playerStore'
 import { GestureTrailCanvas } from '@/ui/components/GestureTrailCanvas'
+import { GameHUD } from '@/ui/components/GameHUD'
+import { PlayerScores } from '@/ui/components/PlayerScores'
 
 export const FruitLayer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<FruitGame | undefined>(undefined)
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   const { lastGesture } = useGestureDetection()
+  const { isPlaying, gameMode, registerSlice } = useGameStore()
+  const { registerPlayerSlice } = usePlayerStore()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -35,16 +41,43 @@ export const FruitLayer = () => {
     return () => observer.disconnect()
   }, [])
 
+  // Control spawning based on game state
   useEffect(() => {
-    if (!lastGesture) return
-    gameRef.current?.handleGesture(lastGesture)
-  }, [lastGesture])
+    gameRef.current?.setSpawning(isPlaying)
+    if (!isPlaying) {
+      gameRef.current?.clearFruits()
+    }
+  }, [isPlaying])
+
+  const handleGesture = useCallback(() => {
+    if (!lastGesture || !isPlaying) return
+    const result = gameRef.current?.handleGesture(lastGesture)
+    if (result) {
+      const scoreDelta = 10
+      
+      if (gameMode === 'solo') {
+        registerSlice({
+          fruitId: result.fruitId,
+          scoreDelta,
+          slicedAt: Date.now(),
+        })
+      } else {
+        // Versus mode: register to player store based on hand
+        registerPlayerSlice(result.hand, scoreDelta)
+      }
+    }
+  }, [lastGesture, isPlaying, gameMode, registerSlice, registerPlayerSlice])
+
+  useEffect(() => {
+    handleGesture()
+  }, [handleGesture])
 
   return (
     <div className="playfield-overlay">
       <canvas ref={canvasRef} className="playfield-fruit-canvas" />
       <GestureTrailCanvas gesture={lastGesture ?? null} />
+      {isPlaying && gameMode === 'solo' && <GameHUD />}
+      {isPlaying && gameMode === 'versus' && <PlayerScores />}
     </div>
   )
 }
-

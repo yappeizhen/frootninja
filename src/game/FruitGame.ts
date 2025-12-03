@@ -47,6 +47,11 @@ interface SliceEffect {
   lifespan: number
 }
 
+export interface SliceResult {
+  fruitId: string
+  hand: import('@/types').Handedness
+}
+
 export class FruitGame {
   private scene = new THREE.Scene()
   private camera: THREE.PerspectiveCamera
@@ -59,6 +64,7 @@ export class FruitGame {
   private canvas: HTMLCanvasElement
   private projectionHelper = new THREE.Vector3()
   private envMap: THREE.Texture | null = null
+  private spawningEnabled = true
 
   // Shared Geometries - higher poly for smoother look
   private sphereGeo = new THREE.SphereGeometry(1, 64, 64)
@@ -350,10 +356,26 @@ export class FruitGame {
     this.renderer.dispose()
   }
 
-  handleGesture(gesture: GestureEvent) {
+  handleGesture(gesture: GestureEvent): SliceResult | null {
     const candidate = this.pickGestureTarget(gesture)
-    if (!candidate) return
+    if (!candidate) return null
     this.sliceFruit(candidate, gesture)
+    return {
+      fruitId: candidate.id,
+      hand: gesture.hand,
+    }
+  }
+
+  setSpawning(enabled: boolean) {
+    this.spawningEnabled = enabled
+  }
+
+  clearFruits() {
+    this.fruits.forEach((fruit) => {
+      this.scene.remove(fruit.mesh)
+      ;(fruit.mesh.material as THREE.Material).dispose()
+    })
+    this.fruits = []
   }
 
   syncViewport() {
@@ -369,10 +391,12 @@ export class FruitGame {
   }
 
   private update(delta: number) {
-    this.spawnAccumulator += delta
-    if (this.spawnAccumulator >= 1.0) {
-      this.spawnAccumulator = Math.random() * 0.3
-      this.spawnFruit()
+    if (this.spawningEnabled) {
+      this.spawnAccumulator += delta
+      if (this.spawnAccumulator >= 1.0) {
+        this.spawnAccumulator = Math.random() * 0.3
+        this.spawnFruit()
+      }
     }
     this.updateFruits(delta)
     this.updateEffects(delta)

@@ -17,6 +17,8 @@ export interface FruitSpawn {
 
 export type GamePhase = 'idle' | 'calibrating' | 'running' | 'paused' | 'game-over'
 
+export type GameMode = 'solo' | 'versus'
+
 export interface SliceEvent {
   fruitId: string
   scoreDelta: number
@@ -38,6 +40,7 @@ export interface GestureEvent {
 
 export interface GameState {
   phase: GamePhase
+  gameMode: GameMode
   score: number
   combo: number
   lives: number
@@ -45,5 +48,10 @@ export interface GameState {
   activeFruits: FruitSpawn[]
   recentSlice?: SliceEvent
   lastGesture?: GestureEvent
+  // Session management
+  timeRemaining: number
+  roundDuration: number
+  highScore: number
+  isPlaying: boolean
 }
 
