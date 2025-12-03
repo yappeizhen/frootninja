@@ -2,11 +2,12 @@
 
 :root {
   --bg-color: #050505;
-  --card-bg: rgba(15, 15, 15, 0.85);
+  --card-bg: rgba(10, 10, 12, 0.75);
   --text-main: #ffffff;
   --text-muted: #a3a3a3;
   --accent-pink: #ff007f; /* Hot Pink */
   --accent-cyan: #00ffff; /* Cyber Cyan */
+  --accent-purple: #bf00ff; /* Electric Purple */
   --border-glow: rgba(255, 255, 255, 0.15);
 }
 
@@ -16,6 +17,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-color);
+  overflow: hidden; /* Prevent scrollbars from glow effects */
 }
 
 h1, h2, h3 {
@@ -27,12 +29,30 @@ h1, h2, h3 {
 
 .app-shell {
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #1a0b14 0%, #050505 100%);
+  background: 
+    radial-gradient(circle at 50% 0%, #1a0b14 0%, transparent 60%),
+    linear-gradient(to bottom, #050505, #080808);
   color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  position: relative;
+}
+
+/* Subtle Grid Pattern */
+.app-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask: radial-gradient(circle at center, black 40%, transparent 100%);
+  -webkit-mask: radial-gradient(circle at center, black 40%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .app-grid {
@@ -41,10 +61,11 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 2rem;
   align-items: center;
+  z-index: 1;
 }
 
 .playfield-card {
-  border-radius: 0.5rem; /* Sharper corners */
+  border-radius: 0.5rem;
   border: 1px solid var(--border-glow);
   background: var(--card-bg);
   backdrop-filter: blur(20px);
@@ -52,9 +73,29 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 0, 127, 0.05);
   width: 100%;
   position: relative;
+  
+  /* Double Border Glow Effect */
+  box-shadow: 
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 20px 50px rgba(0, 0, 0, 0.8),
+    0 0 40px rgba(255, 0, 127, 0.05);
+}
+
+/* Corner Accents */
+.playfield-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 0.5rem;
+  padding: 1px; 
+  background: linear-gradient(45deg, var(--accent-cyan), transparent 40%, transparent 60%, var(--accent-pink));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .playfield-stage {
@@ -143,7 +184,7 @@ h1, h2, h3 {
   color: var(--accent-cyan);
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
 }
@@ -186,7 +227,22 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  position: relative;
+}
+
+/* Gesture Card Border Accent (Purple) */
+.gesture-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 0.5rem;
+  padding: 1px; 
+  background: linear-gradient(135deg, transparent 60%, var(--accent-purple));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .gesture-card__header {

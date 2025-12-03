@@ -92,8 +92,8 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
     lastGestureId.current = gesture.id
 
     // Black-Pink High Contrast Colors
-    // Left Hand: Cyan/Ice | Right Hand: Hot Pink/Magenta
-    const glowColor = gesture.hand === 'Left' ? '#00ffff' : '#ff0055'
+    // Left Hand: Cyan/Ice | Right Hand: Electric Purple
+    const glowColor = gesture.hand === 'Left' ? '#00ffff' : '#bf00ff'
     
     const length = 0.25 + gesture.strength * 0.4 // Longer, faster slices
     const endX = clamp01(gesture.origin.x + gesture.direction.x * length)
