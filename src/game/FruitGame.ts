@@ -43,7 +43,6 @@ interface SliceEffect {
   halves: SliceHalf[]
   juiceParticles: JuiceParticle[]
   juiceMesh: THREE.InstancedMesh
-  flashMesh: THREE.Mesh
   elapsed: number
   lifespan: number
 }
@@ -65,7 +64,6 @@ export class FruitGame {
   private halfSphereGeo: THREE.BufferGeometry
   private strawberryGeo: THREE.BufferGeometry
   private juiceGeo = new THREE.SphereGeometry(1, 8, 8)
-  private flashGeo = new THREE.RingGeometry(0, 1, 32)
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -123,13 +121,19 @@ export class FruitGame {
     return geo
   }
 
-  private createFruitMaterial(color: number, isInner: boolean = false): THREE.MeshStandardMaterial {
-    return new THREE.MeshStandardMaterial({
+  private createFruitMaterial(color: number, isInner: boolean = false): THREE.MeshPhysicalMaterial {
+    return new THREE.MeshPhysicalMaterial({
       color: color,
-      roughness: isInner ? 0.6 : 0.35,
-      metalness: 0.0,
+      roughness: isInner ? 0.35 : 0.12,
+      metalness: 0.05,
+      clearcoat: isInner ? 0.4 : 0.9,
+      clearcoatRoughness: 0.08,
+      reflectivity: 1.0,
       emissive: color,
-      emissiveIntensity: isInner ? 0.15 : 0.05,
+      emissiveIntensity: isInner ? 0.25 : 0.12,
+      transmission: isInner ? 0.1 : 0.25,
+      thickness: 0.8,
+      ior: 1.5,
     })
   }
 
@@ -159,15 +163,12 @@ export class FruitGame {
         ;(h.mesh.material as THREE.Material).dispose()
       })
       this.scene.remove(effect.juiceMesh)
-      this.scene.remove(effect.flashMesh)
       effect.juiceMesh.dispose()
-      ;(effect.flashMesh.material as THREE.Material).dispose()
     })
     this.sphereGeo.dispose()
     this.halfSphereGeo.dispose()
     this.strawberryGeo.dispose()
     this.juiceGeo.dispose()
-    this.flashGeo.dispose()
     this.renderer.dispose()
   }
 
@@ -245,9 +246,7 @@ export class FruitGame {
           ;(h.mesh.material as THREE.Material).dispose()
         })
         this.scene.remove(effect.juiceMesh)
-        this.scene.remove(effect.flashMesh)
         effect.juiceMesh.dispose()
-        ;(effect.flashMesh.material as THREE.Material).dispose()
         return false
       }
 
@@ -279,12 +278,6 @@ export class FruitGame {
         effect.juiceMesh.setMatrixAt(i, dummy.matrix)
       })
       effect.juiceMesh.instanceMatrix.needsUpdate = true
-      
-      // Update flash
-      const flashScale = 0.5 + progress * 2
-      effect.flashMesh.scale.setScalar(flashScale)
-      const flashMat = effect.flashMesh.material as THREE.MeshBasicMaterial
-      flashMat.opacity = (1 - progress) * 0.8
 
       return true
     })
@@ -334,56 +327,56 @@ export class FruitGame {
       case 'strawberry':
         return {
           type,
-          outerColor: 0xff3344,  // Bright red
-          innerColor: 0xffcccc,  // Light pink inside
+          outerColor: 0xc41e3a,  // Deep crimson red
+          innerColor: 0xff6b8a,  // Rose pink inside
           geometry: this.strawberryGeo,
           scale: new THREE.Vector3(0.25, 0.25, 0.25),
         }
       case 'orange':
         return {
           type,
-          outerColor: 0xff8800,  // Orange
-          innerColor: 0xffcc66,  // Light orange inside
+          outerColor: 0xe65c00,  // Deep orange
+          innerColor: 0xffb347,  // Rich amber inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.28, 0.28, 0.28),
         }
       case 'apple':
         return {
           type,
-          outerColor: 0xcc2222,  // Red apple
-          innerColor: 0xffffee,  // Cream inside
+          outerColor: 0x8b0000,  // Dark red
+          innerColor: 0xfff8dc,  // Cornsilk inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.26, 0.26, 0.26),
         }
       case 'watermelon':
         return {
           type,
-          outerColor: 0x2d5a27,  // Green rind
-          innerColor: 0xff4466,  // Pink flesh
+          outerColor: 0x1a4d1a,  // Deep forest green
+          innerColor: 0xe63950,  // Deep pink flesh
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.24, 0.32, 0.24),
         }
       case 'grape':
         return {
           type,
-          outerColor: 0x6b2d8b,  // Purple
-          innerColor: 0xddccee,  // Light purple inside
+          outerColor: 0x4a1259,  // Deep purple
+          innerColor: 0xc9a0dc,  // Soft lavender inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.18, 0.18, 0.18),
         }
       case 'lemon':
         return {
           type,
-          outerColor: 0xffee00,  // Yellow
-          innerColor: 0xffffaa,  // Pale yellow inside
+          outerColor: 0xe6c200,  // Deep golden yellow
+          innerColor: 0xfff59d,  // Soft lemon inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.22, 0.26, 0.22),
         }
       case 'kiwi':
         return {
           type,
-          outerColor: 0x8b7355,  // Brown fuzzy outside
-          innerColor: 0x88cc44,  // Green inside
+          outerColor: 0x5c4033,  // Deep brown
+          innerColor: 0x6bbf59,  // Vibrant green inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.2, 0.24, 0.2),
         }
@@ -512,25 +505,11 @@ export class FruitGame {
     }
     
     this.scene.add(juiceMesh)
-    
-    // Create flash effect
-    const flashMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.8,
-      side: THREE.DoubleSide,
-    })
-    const flashMesh = new THREE.Mesh(this.flashGeo, flashMat)
-    flashMesh.position.copy(origin)
-    flashMesh.lookAt(this.camera.position)
-    flashMesh.scale.setScalar(0.3)
-    this.scene.add(flashMesh)
 
     this.effects.push({
       halves,
       juiceParticles,
       juiceMesh,
-      flashMesh,
       elapsed: 0,
       lifespan: 1.2
     })
