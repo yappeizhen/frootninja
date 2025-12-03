@@ -552,10 +552,35 @@ export class FruitGame {
 
   private spawnFruit() {
     const config = this.getRandomFruitConfig()
+    const isBomb = config.type === 'bomb'
     
-    const material = this.createFruitMaterial(config.outerColor, false, config.type)
+    const material = isBomb 
+      ? this.createBombMaterial() 
+      : this.createFruitMaterial(config.outerColor, false, config.type)
     const mesh = new THREE.Mesh(config.geometry, material)
     mesh.scale.copy(config.scale)
+    
+    // Add fuse to bomb
+    if (isBomb) {
+      const fuseGeo = new THREE.CylinderGeometry(0.08, 0.06, 0.4, 8)
+      const fuseMat = new THREE.MeshBasicMaterial({ color: 0x8b4513 })
+      const fuse = new THREE.Mesh(fuseGeo, fuseMat)
+      fuse.position.y = 1.1
+      fuse.rotation.z = 0.2
+      mesh.add(fuse)
+      
+      // Add spark/glow at tip of fuse
+      const sparkGeo = new THREE.SphereGeometry(0.12, 8, 8)
+      const sparkMat = new THREE.MeshBasicMaterial({ 
+        color: 0xff6600, 
+        transparent: true, 
+        opacity: 0.9 
+      })
+      const spark = new THREE.Mesh(sparkGeo, sparkMat)
+      spark.position.y = 1.35
+      spark.position.x = 0.08
+      mesh.add(spark)
+    }
     
     const startX = THREE.MathUtils.randFloatSpread(1.8)
     mesh.position.set(startX, -1.5, THREE.MathUtils.randFloat(-0.3, 0.3))
@@ -582,11 +607,24 @@ export class FruitGame {
       outerColor: config.outerColor,
       innerColor: config.innerColor,
       initialScale: config.scale.clone(),
-      type: config.type
+      type: config.type,
+      isBomb,
     })
   }
 
   private getRandomFruitConfig(): FruitConfig {
+    // 15% chance of spawning a bomb
+    if (Math.random() < 0.15) {
+      return {
+        type: 'bomb',
+        outerColor: 0x1a1a1a,
+        innerColor: 0xff4400,
+        geometry: this.bombGeo,
+        scale: new THREE.Vector3(0.28, 0.28, 0.28),
+        isBomb: true,
+      }
+    }
+    
     const types: FruitType[] = ['strawberry', 'orange', 'apple', 'watermelon', 'grape', 'lemon', 'kiwi']
     const type = types[Math.floor(Math.random() * types.length)]
 
@@ -646,6 +684,14 @@ export class FruitGame {
           innerColor: 0x6bbf59,  // Vibrant green inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.22, 0.26, 0.22),
+        }
+      default:
+        return {
+          type: 'apple',
+          outerColor: 0x8b0000,
+          innerColor: 0xfff8dc,
+          geometry: this.appleGeo,
+          scale: new THREE.Vector3(0.32, 0.32, 0.32),
         }
     }
   }
@@ -779,6 +825,112 @@ export class FruitGame {
       juiceMesh,
       elapsed: 0,
       lifespan: 1.2
+    })
+  }
+
+  private explodeBomb(bomb: FruitBody) {
+    const origin = bomb.mesh.position.clone()
+    
+    // Remove bomb
+    this.scene.remove(bomb.mesh)
+    ;(bomb.mesh.material as THREE.Material).dispose()
+    this.fruits = this.fruits.filter((f) => f.id !== bomb.id)
+    
+    // Create explosion effect
+    this.createExplosionEffect(origin)
+  }
+
+  private createExplosionEffect(origin: THREE.Vector3) {
+    // Create explosion flash
+    const flashGeo = new THREE.SphereGeometry(0.8, 16, 16)
+    const flashMat = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
+      transparent: true,
+      opacity: 1,
+    })
+    const flashMesh = new THREE.Mesh(flashGeo, flashMat)
+    flashMesh.position.copy(origin)
+    this.scene.add(flashMesh)
+    
+    // Create explosion particles
+    const particleCount = 30
+    const particleMat = new THREE.MeshBasicMaterial({
+      color: 0xff4400,
+      transparent: true,
+      opacity: 0.9,
+    })
+    const particleMesh = new THREE.InstancedMesh(this.juiceGeo, particleMat, particleCount)
+    
+    const particles: ExplosionParticle[] = []
+    for (let i = 0; i < particleCount; i++) {
+      const angle = THREE.MathUtils.randFloat(0, Math.PI * 2)
+      const elevation = THREE.MathUtils.randFloat(-0.5, 0.8)
+      const speed = THREE.MathUtils.randFloat(4, 10)
+      
+      const velocity = new THREE.Vector3(
+        Math.cos(angle) * speed * (1 - Math.abs(elevation)),
+        elevation * speed + 2,
+        Math.sin(angle) * speed * (1 - Math.abs(elevation)) * 0.5
+      )
+      
+      particles.push({
+        position: origin.clone(),
+        velocity,
+        scale: THREE.MathUtils.randFloat(0.03, 0.1),
+        life: 0
+      })
+    }
+    
+    this.scene.add(particleMesh)
+    
+    this.explosionEffects.push({
+      particles,
+      particleMesh,
+      flashMesh,
+      elapsed: 0,
+      lifespan: 1.0
+    })
+  }
+
+  private updateExplosions(delta: number) {
+    this.explosionEffects = this.explosionEffects.filter((effect) => {
+      effect.elapsed += delta
+      const progress = effect.elapsed / effect.lifespan
+      
+      if (progress >= 1) {
+        this.scene.remove(effect.particleMesh)
+        this.scene.remove(effect.flashMesh)
+        effect.particleMesh.dispose()
+        ;(effect.flashMesh.material as THREE.Material).dispose()
+        return false
+      }
+      
+      // Update flash
+      const flashProgress = Math.min(progress * 3, 1)
+      const flashMat = effect.flashMesh.material as THREE.MeshBasicMaterial
+      flashMat.opacity = 1 - flashProgress
+      effect.flashMesh.scale.setScalar(1 + flashProgress * 2)
+      
+      // Update particles
+      const dummy = new THREE.Object3D()
+      effect.particles.forEach((p, i) => {
+        p.velocity.y -= delta * 8 // gravity
+        p.position.addScaledVector(p.velocity, delta)
+        p.velocity.multiplyScalar(0.95)
+        
+        dummy.position.copy(p.position)
+        const scale = p.scale * (1 - progress * 0.5)
+        dummy.scale.setScalar(scale)
+        dummy.updateMatrix()
+        effect.particleMesh.setMatrixAt(i, dummy.matrix)
+      })
+      effect.particleMesh.instanceMatrix.needsUpdate = true
+      
+      // Fade out particles
+      const particleMat = effect.particleMesh.material as THREE.MeshBasicMaterial
+      particleMat.opacity = 0.9 * (1 - this.easeOutCubic(progress))
+      
+      return true
     })
   }
 

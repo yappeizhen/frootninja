@@ -12,7 +12,7 @@ export const FruitLayer = () => {
   const gameRef = useRef<FruitGame | undefined>(undefined)
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   const { lastGesture } = useGestureDetection()
-  const { isPlaying, gameMode, registerSlice } = useGameStore()
+  const { isPlaying, gameMode, lives, registerSlice, setLives, endRound } = useGameStore()
   const { registerPlayerSlice } = usePlayerStore()
 
   useEffect(() => {
@@ -53,20 +53,31 @@ export const FruitLayer = () => {
     if (!lastGesture || !isPlaying) return
     const result = gameRef.current?.handleGesture(lastGesture)
     if (result) {
-      const scoreDelta = 10
-      
-      if (gameMode === 'solo') {
-        registerSlice({
-          fruitId: result.fruitId,
-          scoreDelta,
-          slicedAt: Date.now(),
-        })
+      if (result.isBomb) {
+        // Hit a bomb - lose a life!
+        const newLives = lives - 1
+        setLives(newLives)
+        
+        // End game if no lives left
+        if (newLives <= 0) {
+          endRound()
+        }
       } else {
-        // Versus mode: register to player store based on hand
-        registerPlayerSlice(result.hand, scoreDelta)
+        const scoreDelta = 10
+        
+        if (gameMode === 'solo') {
+          registerSlice({
+            fruitId: result.fruitId,
+            scoreDelta,
+            slicedAt: Date.now(),
+          })
+        } else {
+          // Versus mode: register to player store based on hand
+          registerPlayerSlice(result.hand, scoreDelta)
+        }
       }
     }
-  }, [lastGesture, isPlaying, gameMode, registerSlice, registerPlayerSlice])
+  }, [lastGesture, isPlaying, gameMode, lives, registerSlice, registerPlayerSlice, setLives, endRound])
 
   useEffect(() => {
     handleGesture()
