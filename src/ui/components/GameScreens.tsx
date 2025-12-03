@@ -59,10 +59,11 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
 
 interface GameOverScreenProps {
   onRestart: () => void
+  onChangeMode: () => void
   isNewHighScore: boolean
 }
 
-export const GameOverScreen = ({ onRestart, isNewHighScore }: GameOverScreenProps) => {
+export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: GameOverScreenProps) => {
   const { score, highScore, combo } = useGameStore()
 
   return (
@@ -91,9 +92,14 @@ export const GameOverScreen = ({ onRestart, isNewHighScore }: GameOverScreenProp
           </div>
         </div>
 
-        <button className="game-btn" onClick={onRestart}>
-          Play Again
-        </button>
+        <div className="game-screen__actions">
+          <button className="game-btn" onClick={onRestart}>
+            Play Again
+          </button>
+          <button className="game-btn game-btn--secondary" onClick={onChangeMode}>
+            Change Mode
+          </button>
+        </div>
 
         {!isNewHighScore && highScore > 0 && (
           <div className="game-screen__highscore">
@@ -108,9 +114,10 @@ export const GameOverScreen = ({ onRestart, isNewHighScore }: GameOverScreenProp
 
 interface VersusGameOverScreenProps {
   onRestart: () => void
+  onChangeMode: () => void
 }
 
-export const VersusGameOverScreen = ({ onRestart }: VersusGameOverScreenProps) => {
+export const VersusGameOverScreen = ({ onRestart, onChangeMode }: VersusGameOverScreenProps) => {
   const { player1, player2, getWinner } = usePlayerStore()
   const winner = getWinner()
 
@@ -146,9 +153,14 @@ export const VersusGameOverScreen = ({ onRestart }: VersusGameOverScreenProps) =
           </div>
         </div>
 
-        <button className="game-btn" onClick={onRestart}>
-          Play Again
-        </button>
+        <div className="game-screen__actions">
+          <button className="game-btn" onClick={onRestart}>
+            Play Again
+          </button>
+          <button className="game-btn game-btn--secondary" onClick={onChangeMode}>
+            Change Mode
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -75,6 +75,11 @@ export const Playfield = () => {
     startRound()
   }, [reset, startRound, highScore, resetPlayers])
 
+  const handleBackToMenu = useCallback(() => {
+    reset()
+    resetPlayers()
+  }, [reset, resetPlayers])
+
   const isNewHighScore = phase === 'game-over' && score > prevHighScore
 
   const banner = useMemo(() => {
@@ -112,15 +117,26 @@ export const Playfield = () => {
         />
         <FruitLayer />
         
+        {/* Back to Menu button during gameplay */}
+        {phase === 'running' && (
+          <button 
+            className="game-menu-btn"
+            onClick={handleBackToMenu}
+            aria-label="Back to menu"
+          >
+            ✕
+          </button>
+        )}
+        
         {/* Game screens overlay */}
         {phase === 'idle' && status === 'ready' && (
           <StartScreen onStart={handleStart} />
         )}
         {phase === 'game-over' && gameMode === 'solo' && (
-          <GameOverScreen onRestart={handleRestart} isNewHighScore={isNewHighScore} />
+          <GameOverScreen onRestart={handleRestart} onChangeMode={handleBackToMenu} isNewHighScore={isNewHighScore} />
         )}
         {phase === 'game-over' && gameMode === 'versus' && (
-          <VersusGameOverScreen onRestart={handleRestart} />
+          <VersusGameOverScreen onRestart={handleRestart} onChangeMode={handleBackToMenu} />
         )}
         
         {banner && phase !== 'idle' ? (

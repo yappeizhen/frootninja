@@ -3,7 +3,7 @@ import type { GestureEvent } from '@/types'
 
 const GRAVITY = new THREE.Vector3(0, -8.0, 0)
 
-type FruitType = 'strawberry' | 'orange' | 'apple' | 'watermelon' | 'grape' | 'lemon' | 'kiwi'
+type FruitType = 'strawberry' | 'orange' | 'apple' | 'watermelon' | 'grape' | 'lemon' | 'kiwi' | 'bomb'
 
 interface FruitConfig {
   type: FruitType
@@ -11,6 +11,7 @@ interface FruitConfig {
   innerColor: number
   scale: THREE.Vector3
   geometry: THREE.BufferGeometry
+  isBomb?: boolean
 }
 
 interface FruitBody {
@@ -23,6 +24,7 @@ interface FruitBody {
   innerColor: number
   initialScale: THREE.Vector3
   type: FruitType
+  isBomb: boolean
 }
 
 interface SliceHalf {
@@ -47,9 +49,25 @@ interface SliceEffect {
   lifespan: number
 }
 
+interface ExplosionParticle {
+  position: THREE.Vector3
+  velocity: THREE.Vector3
+  scale: number
+  life: number
+}
+
+interface ExplosionEffect {
+  particles: ExplosionParticle[]
+  particleMesh: THREE.InstancedMesh
+  flashMesh: THREE.Mesh
+  elapsed: number
+  lifespan: number
+}
+
 export interface SliceResult {
   fruitId: string
   hand: import('@/types').Handedness
+  isBomb: boolean
 }
 
 export class FruitGame {
@@ -73,7 +91,11 @@ export class FruitGame {
   private orangeGeo: THREE.BufferGeometry
   private lemonGeo: THREE.BufferGeometry
   private appleGeo: THREE.BufferGeometry
+  private bombGeo: THREE.BufferGeometry
   private juiceGeo = new THREE.SphereGeometry(1, 12, 12)
+  
+  // Explosion effects
+  private explosionEffects: ExplosionEffect[] = []
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -86,6 +108,7 @@ export class FruitGame {
     this.orangeGeo = this.createOrangeGeometry()
     this.lemonGeo = this.createLemonGeometry()
     this.appleGeo = this.createAppleGeometry()
+    this.bombGeo = this.createBombGeometry()
     
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -276,6 +299,24 @@ export class FruitGame {
     return new THREE.LatheGeometry(points, 32)
   }
 
+  private createBombGeometry(): THREE.BufferGeometry {
+    // Classic cartoon bomb shape - sphere with a fuse nub
+    const bombBody = new THREE.SphereGeometry(1, 32, 32)
+    return bombBody
+  }
+
+  private createBombMaterial(): THREE.MeshPhysicalMaterial {
+    return new THREE.MeshPhysicalMaterial({
+      color: 0x1a1a1a,
+      roughness: 0.3,
+      metalness: 0.8,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.2,
+      emissive: 0x330000,
+      emissiveIntensity: 0.3,
+    })
+  }
+
   private createFruitMaterial(color: number, isInner: boolean = false, fruitType?: FruitType): THREE.MeshPhysicalMaterial {
     // Subsurface scattering color (lighter version of base)
     const baseColor = new THREE.Color(color)
@@ -345,12 +386,19 @@ export class FruitGame {
       this.scene.remove(effect.juiceMesh)
       effect.juiceMesh.dispose()
     })
+    this.explosionEffects.forEach((effect) => {
+      this.scene.remove(effect.particleMesh)
+      this.scene.remove(effect.flashMesh)
+      effect.particleMesh.dispose()
+      ;(effect.flashMesh.material as THREE.Material).dispose()
+    })
     this.sphereGeo.dispose()
     this.halfSphereGeo.dispose()
     this.strawberryGeo.dispose()
     this.orangeGeo.dispose()
     this.lemonGeo.dispose()
     this.appleGeo.dispose()
+    this.bombGeo.dispose()
     this.juiceGeo.dispose()
     if (this.envMap) this.envMap.dispose()
     this.renderer.dispose()
@@ -359,10 +407,17 @@ export class FruitGame {
   handleGesture(gesture: GestureEvent): SliceResult | null {
     const candidate = this.pickGestureTarget(gesture)
     if (!candidate) return null
-    this.sliceFruit(candidate, gesture)
+    
+    if (candidate.isBomb) {
+      this.explodeBomb(candidate)
+    } else {
+      this.sliceFruit(candidate, gesture)
+    }
+    
     return {
       fruitId: candidate.id,
       hand: gesture.hand,
+      isBomb: candidate.isBomb,
     }
   }
 
@@ -376,6 +431,15 @@ export class FruitGame {
       ;(fruit.mesh.material as THREE.Material).dispose()
     })
     this.fruits = []
+    
+    // Also clear explosion effects
+    this.explosionEffects.forEach((effect) => {
+      this.scene.remove(effect.particleMesh)
+      this.scene.remove(effect.flashMesh)
+      effect.particleMesh.dispose()
+      ;(effect.flashMesh.material as THREE.Material).dispose()
+    })
+    this.explosionEffects = []
   }
 
   syncViewport() {
@@ -400,6 +464,7 @@ export class FruitGame {
     }
     this.updateFruits(delta)
     this.updateEffects(delta)
+    this.updateExplosions(delta)
   }
 
   private updateFruits(delta: number) {

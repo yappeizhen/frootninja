@@ -1246,6 +1246,44 @@ h1, h2, h3 {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Actions Container */
+.game-screen__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  align-items: center;
+}
+
+/* Menu Button (during gameplay) - positioned bottom-left to avoid timer */
+.game-menu-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  z-index: 15;
+  pointer-events: auto;
+}
+
+.game-menu-btn:hover {
+  background: rgba(255, 143, 171, 0.3);
+  border-color: var(--pastel-rose);
+  color: var(--pastel-rose);
+  transform: scale(1.1);
+}
+
 .game-screen__highscore {
   margin-top: 1rem;
   display: flex;
@@ -1791,6 +1829,14 @@ h1, h2, h3 {
     font-size: 0.9rem;
   }
   
+  .game-menu-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
+  }
+  
   .playfield-status-pill {
     font-size: 0.55rem;
     padding: 0.3rem 0.75rem;
@@ -1903,6 +1949,10 @@ h1, h2, h3 {
   .game-btn {
     padding: 0.75rem 1.75rem;
     font-size: 0.75rem;
+  }
+  
+  .game-screen__actions {
+    gap: 0.5rem;
   }
   
   .game-screen__new-record {
@@ -2033,6 +2083,14 @@ h1, h2, h3 {
     font-size: 0.8rem;
   }
   
+  .game-menu-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
+    bottom: 0.35rem;
+    left: 0.35rem;
+  }
+  
   /* Game HUD ultra compact */
   .game-hud {
     padding: 0.35rem;
@@ -2129,6 +2187,10 @@ h1, h2, h3 {
   .game-btn {
     padding: 0.6rem 1.5rem;
     font-size: 0.7rem;
+  }
+  
+  .game-screen__actions {
+    gap: 0.4rem;
   }
   
   .game-screen__highscore {
