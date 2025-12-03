@@ -455,6 +455,51 @@ h1, h2, h3 {
   100% { transform: scale(1); }
 }
 
+/* Header Pills Container */
+.header-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Tracking Pill */
+.tracking-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.tracking-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.tracking-pill--active {
+  background: rgba(109, 220, 176, 0.12);
+  border-color: rgba(109, 220, 176, 0.3);
+  color: var(--pastel-mint);
+}
+
+.tracking-pill--active .tracking-pill__dot {
+  background: var(--pastel-mint);
+  box-shadow: 0 0 8px var(--pastel-mint);
+  animation: pulse 2s ease-in-out infinite;
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -947,8 +992,8 @@ h1, h2, h3 {
 /* High Score Badge */
 .hud-highscore {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 4.5rem;
+  right: 1rem;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -1790,6 +1835,20 @@ h1, h2, h3 {
     font-size: 0.85rem;
   }
   
+  .hud-highscore {
+    top: 3.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .hud-highscore__label {
+    font-size: 0.5rem;
+  }
+  
+  .hud-highscore__value {
+    font-size: 0.75rem;
+  }
+  
   /* Game screen adjustments */
   .game-screen {
     padding: 1.5rem;
@@ -2011,6 +2070,20 @@ h1, h2, h3 {
   
   .hud-lives__heart {
     font-size: 0.7rem;
+  }
+  
+  .hud-highscore {
+    top: 2.75rem;
+    right: 0.35rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .hud-highscore__label {
+    font-size: 0.45rem;
+  }
+  
+  .hud-highscore__value {
+    font-size: 0.65rem;
   }
   
   /* Game screens ultra compact */

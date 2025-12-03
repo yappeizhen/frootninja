@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { useHandData } from '@/cv'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { useGameStore } from '@/state/gameStore'
 
@@ -65,11 +66,14 @@ const DirectionIndicator = ({ x, y }: { x: number; y: number }) => {
 }
 
 export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) => {
+  const { frame, maxHands } = useHandData()
   const { lastGesture } = useGestureDetection()
   const { score, combo } = useGameStore()
   const [totalSlices, setTotalSlices] = useState(0)
   const [maxCombo, setMaxCombo] = useState(0)
   const [peakSpeed, setPeakSpeed] = useState(0)
+  
+  const handsDetected = frame?.hands.length ?? 0
 
   useEffect(() => {
     if (lastGesture?.type === 'slice') {
@@ -121,8 +125,14 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
         <header className="side-panel__header">
           <p className="eyebrow">Live gestures</p>
           <h2>Slice Analytics</h2>
-          <div className={`gesture-pill ${lastGesture?.type === 'slice' ? 'gesture-pill--active' : ''}`}>
-            {lastGesture ? lastGesture.type : 'idle'}
+          <div className="header-pills">
+            <div className={`gesture-pill ${lastGesture?.type === 'slice' ? 'gesture-pill--active' : ''}`}>
+              {lastGesture ? lastGesture.type : 'idle'}
+            </div>
+            <div className={`tracking-pill ${handsDetected > 0 ? 'tracking-pill--active' : ''}`}>
+              <span className="tracking-pill__dot" />
+              <span>{handsDetected}/{maxHands} hands</span>
+            </div>
           </div>
         </header>
 

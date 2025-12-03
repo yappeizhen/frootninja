@@ -133,10 +133,6 @@ export const Playfield = () => {
             ) : null}
           </div>
         ) : null}
-        
-        {phase === 'running' && handsDetected > 0 && (
-          <div className="playfield-status-pill">Hands detected</div>
-        )}
       </div>
       <footer className="playfield-footer">
         <div>
