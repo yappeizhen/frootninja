@@ -1,25 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Varela+Round&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap');
 
 :root {
-  --bg-color: #fff5f5;
-  --card-bg: rgba(255, 255, 255, 0.95);
-  --text-main: #4a4a4a;
-  --text-muted: #888888;
-  --accent-pink: #ff9ff3;
-  --accent-blue: #54a0ff;
-  --border-color: #ffecd1;
+  --bg-color: #050505;
+  --card-bg: rgba(15, 15, 15, 0.85);
+  --text-main: #ffffff;
+  --text-muted: #a3a3a3;
+  --accent-pink: #ff007f; /* Hot Pink */
+  --accent-cyan: #00ffff; /* Cyber Cyan */
+  --border-glow: rgba(255, 255, 255, 0.15);
 }
 
 body {
   margin: 0;
-  font-family: 'Varela Round', sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+}
+
+h1, h2, h3 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
 }
 
 .app-shell {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #fff0f6, #fff5f5 60%);
+  background: radial-gradient(circle at 50% 0%, #1a0b14 0%, #050505 100%);
   color: var(--text-main);
   display: flex;
   align-items: center;
@@ -36,39 +44,39 @@ body {
 }
 
 .playfield-card {
-  border-radius: 2rem;
-  border: 4px solid var(--border-color);
+  border-radius: 0.5rem; /* Sharper corners */
+  border: 1px solid var(--border-glow);
   background: var(--card-bg);
+  backdrop-filter: blur(20px);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: 0 20px 40px rgba(255, 183, 178, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 0, 127, 0.05);
   width: 100%;
+  position: relative;
 }
 
 .playfield-stage {
   position: relative;
-  border-radius: 1.5rem;
+  border-radius: 0.25rem;
   overflow: hidden;
-  background: #ffeaa7;
+  background: #000;
   width: min(960px, 100%);
   aspect-ratio: 3 / 2;
   max-height: calc(100vh - 200px);
   margin: 0 auto;
-  border: 4px solid white;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.9);
 }
 
 .playfield-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(1.1) contrast(1.05);
   display: block;
   transform: scaleX(-1);
   transform-origin: center;
-  opacity: 0.9;
 }
 
 .playfield-banner {
@@ -77,59 +85,67 @@ body {
   right: 1.5rem;
   bottom: 1.5rem;
   padding: 1rem 1.5rem;
-  border-radius: 999px;
+  border-radius: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 1rem;
+  font-size: 0.9rem;
   gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .playfield-banner button {
-  border: none;
-  border-radius: 999px;
-  padding: 0.5rem 1.2rem;
-  font-weight: 700;
-  background: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.25rem;
+  padding: 0.4rem 1.2rem;
+  font-weight: 600;
+  background: transparent;
   color: var(--text-main);
   cursor: pointer;
-  font-family: inherit;
-  transition: transform 0.2s;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
 }
 
 .playfield-banner button:hover {
-  transform: scale(1.05);
+  background: var(--accent-pink);
+  border-color: var(--accent-pink);
+  box-shadow: 0 0 15px var(--accent-pink);
+  color: #fff;
 }
 
 .playfield-banner--muted {
-  background: #f1f2f6;
-  color: var(--text-muted);
+  border-left: 3px solid var(--text-muted);
 }
 
 .playfield-banner--info {
-  background: #d1f2eb;
-  color: #16a085;
+  border-left: 3px solid var(--accent-cyan);
 }
 
 .playfield-banner--warning {
-  background: #fadbd8;
-  color: #e74c3c;
+  border-left: 3px solid var(--accent-pink);
 }
 
 .playfield-status-pill {
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #2ecc71;
-  font-size: 0.9rem;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  animation: bounce 2s infinite;
+  padding: 0.4rem 1rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
 }
 
 .playfield-footer {
@@ -138,32 +154,39 @@ body {
   gap: 1rem;
   text-align: left;
   padding: 0 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.5rem;
 }
 
 .playfield-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .playfield-footer strong {
+  font-family: 'Inter', sans-serif;
   font-size: 1.1rem;
   color: var(--text-main);
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .gesture-card {
-  border-radius: 2rem;
-  border: 4px solid var(--border-color);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-glow);
   background: var(--card-bg);
+  backdrop-filter: blur(20px);
   padding: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(255, 183, 178, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
 }
 
 .gesture-card__header {
@@ -171,35 +194,50 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1.5rem;
 }
 
 .gesture-card__header h2 {
   margin: 0;
   color: var(--text-main);
+  font-size: 1.5rem;
+  background: linear-gradient(90deg, #fff, #a3a3a3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .gesture-pill {
-  padding: 0.5rem 1.2rem;
-  border-radius: 999px;
-  background: #dff9fb;
-  color: #22a6b3;
-  font-size: 0.9rem;
-  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--accent-pink);
+  color: var(--accent-pink);
+  font-size: 0.7rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
 }
 
 .gesture-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .gesture-empty {
   margin: 0;
   color: var(--text-muted);
-  line-height: 1.6;
-  font-style: italic;
+  line-height: 1.8;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  opacity: 0.6;
+  text-align: center;
+  padding: 2rem 0;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
 }
 
 .playfield-overlay {
@@ -224,24 +262,27 @@ body {
 
 .eyebrow, .preview-label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
 }
 
 .eyebrow {
   color: var(--accent-pink);
-  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 0, 127, 0.4);
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+.preview-label + strong {
+  font-family: 'Inter', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
-@keyframes popIn {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes slideUp {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }

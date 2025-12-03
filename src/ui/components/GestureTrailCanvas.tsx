@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { GestureEvent } from '@/types'
 
-const TRAIL_LIFESPAN = 500 // Slightly longer for softer feel
+const TRAIL_LIFESPAN = 300 // Short, fast trails
 
 interface GestureTrail {
   id: string
@@ -9,6 +9,7 @@ interface GestureTrail {
   start: { x: number; y: number }
   end: { x: number; y: number }
   color: string
+  glowColor: string
   width: number
 }
 
@@ -46,27 +47,33 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
           return false
         }
         
-        // Soft fade out
-        ctx.globalAlpha = Math.pow(1 - progress, 2)
+        const dprWidth = trail.width * dpr
         
-        const currentWidth = trail.width * dpr * (1 - Math.pow(progress, 0.5))
+        // Sharp, aggressive fade
+        ctx.globalAlpha = 1 - Math.pow(progress, 0.5)
         
-        ctx.lineWidth = currentWidth
-        ctx.lineCap = 'round'
-        ctx.lineJoin = 'round'
-        ctx.strokeStyle = trail.color
+        // Main Laser Beam
+        ctx.lineWidth = dprWidth * (1 - progress)
+        ctx.lineCap = 'butt' // Sharp ends
+        ctx.lineJoin = 'miter'
         
-        // Glow effect
-        ctx.shadowBlur = 20 * dpr
-        ctx.shadowColor = trail.color
+        // Outer Glow (Neon)
+        ctx.shadowBlur = 25 * dpr
+        ctx.shadowColor = trail.glowColor
+        ctx.strokeStyle = trail.glowColor
         
         ctx.beginPath()
         ctx.moveTo(trail.start.x * canvas.width, trail.start.y * canvas.height)
         ctx.lineTo(trail.end.x * canvas.width, trail.end.y * canvas.height)
         ctx.stroke()
         
-        // Reset shadow for next draw
-        ctx.shadowBlur = 0
+        // Inner Core (White Hot)
+        ctx.shadowBlur = 5 * dpr
+        ctx.shadowColor = '#ffffff'
+        ctx.lineWidth = dprWidth * 0.3 * (1 - progress)
+        ctx.strokeStyle = '#ffffff'
+        ctx.stroke()
+        
         ctx.globalAlpha = 1
         return true
       })
@@ -84,9 +91,11 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
     if (!gesture || gesture.id === lastGestureId.current) return
     lastGestureId.current = gesture.id
 
-    // Pastel Gummy Colors
-    const color = gesture.hand === 'Left' ? '#a0e7e5' : '#ffb7b2' // Soft Teal & Soft Salmon
-    const length = 0.18 + gesture.strength * 0.35
+    // Black-Pink High Contrast Colors
+    // Left Hand: Cyan/Ice | Right Hand: Hot Pink/Magenta
+    const glowColor = gesture.hand === 'Left' ? '#00ffff' : '#ff0055'
+    
+    const length = 0.25 + gesture.strength * 0.4 // Longer, faster slices
     const endX = clamp01(gesture.origin.x + gesture.direction.x * length)
     const endY = clamp01(gesture.origin.y + gesture.direction.y * length)
 
@@ -95,8 +104,9 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
       createdAt: performance.now(),
       start: { x: clamp01(gesture.origin.x), y: clamp01(gesture.origin.y) },
       end: { x: endX, y: endY },
-      color,
-      width: 15 + gesture.strength * 10, // Thicker, softer lines
+      color: '#ffffff',
+      glowColor,
+      width: 12 + gesture.strength * 8, // Razor thin to medium
     })
   }, [gesture])
 
