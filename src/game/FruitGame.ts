@@ -3,11 +3,12 @@ import type { GestureEvent } from '@/types'
 
 const GRAVITY = new THREE.Vector3(0, -8.0, 0)
 
-type FruitType = 'strawberry' | 'banana' | 'green-apple' | 'apple' | 'watermelon' | 'blackberry' | 'dragonfruit'
+type FruitType = 'strawberry' | 'orange' | 'apple' | 'watermelon' | 'grape' | 'lemon' | 'kiwi'
 
 interface FruitConfig {
   type: FruitType
-  color: number
+  outerColor: number
+  innerColor: number
   scale: THREE.Vector3
   geometry: THREE.BufferGeometry
 }
@@ -18,23 +19,31 @@ interface FruitBody {
   velocity: THREE.Vector3
   spin: THREE.Vector3
   createdAt: number
-  color: number
+  outerColor: number
+  innerColor: number
   initialScale: THREE.Vector3
+  type: FruitType
 }
 
-interface Particle {
+interface SliceHalf {
+  mesh: THREE.Mesh
+  velocity: THREE.Vector3
+  spin: THREE.Vector3
+  life: number
+}
+
+interface JuiceParticle {
   position: THREE.Vector3
   velocity: THREE.Vector3
   scale: number
-  rotation: THREE.Vector3
-  spin: THREE.Vector3
   life: number
-  maxLife: number
 }
 
 interface SliceEffect {
-  mesh: THREE.InstancedMesh
-  particles: Particle[]
+  halves: SliceHalf[]
+  juiceParticles: JuiceParticle[]
+  juiceMesh: THREE.InstancedMesh
+  flashMesh: THREE.Mesh
   elapsed: number
   lifespan: number
 }
@@ -52,26 +61,21 @@ export class FruitGame {
   private projectionHelper = new THREE.Vector3()
 
   // Shared Geometries
-  private sphereGeo = new THREE.SphereGeometry(1, 48, 48)
-  private coneGeo = new THREE.ConeGeometry(1, 2, 48)
-  private bananaGeo = new THREE.CapsuleGeometry(0.6, 2, 4, 16)
-  private shardGeo = new THREE.TetrahedronGeometry(1, 0) // Sharp shards for crystals
-  
-  // Dark Crystal / Gemstone Material
-  private crystalMaterial = new THREE.MeshPhysicalMaterial({
-    roughness: 0.05,
-    metalness: 0.1, // Less metal, more glass
-    transmission: 0.6, // See-through
-    thickness: 1.5, // Volume
-    ior: 1.5, // Refraction
-    clearcoat: 1.0,
-    attenuationColor: new THREE.Color(0xffffff),
-    attenuationDistance: 1.0,
-    side: THREE.DoubleSide,
-  })
+  private sphereGeo = new THREE.SphereGeometry(1, 32, 32)
+  private halfSphereGeo: THREE.BufferGeometry
+  private strawberryGeo: THREE.BufferGeometry
+  private juiceGeo = new THREE.SphereGeometry(1, 8, 8)
+  private flashGeo = new THREE.RingGeometry(0, 1, 32)
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
+    
+    // Create half sphere geometry for sliced fruit
+    this.halfSphereGeo = this.createHalfSphere()
+    
+    // Create strawberry-like geometry
+    this.strawberryGeo = this.createStrawberryGeometry()
+    
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -79,32 +83,54 @@ export class FruitGame {
     })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.0
+    this.renderer.toneMappingExposure = 1.2
     
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
     this.camera.position.set(0, 1.5, 4)
     this.camera.lookAt(0, 1, 0)
 
-    // Moody, Gothic Lighting
-    this.scene.add(new THREE.AmbientLight(0x220033, 0.8)) // Deep purple ambient
+    // Bright, cheerful lighting for fruits
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.6))
     
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.0)
-    keyLight.position.set(5, 5, 5)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2)
+    keyLight.position.set(5, 8, 5)
     this.scene.add(keyLight)
     
-    // Accent Lights (Gold & Purple)
-    const rimLight1 = new THREE.SpotLight(0xffd700, 8.0) // Gold Rim
-    rimLight1.position.set(-5, 2, -5)
-    rimLight1.lookAt(0, 0, 0)
-    this.scene.add(rimLight1)
+    // Soft fill light
+    const fillLight = new THREE.DirectionalLight(0xffeedd, 0.4)
+    fillLight.position.set(-3, 2, 3)
+    this.scene.add(fillLight)
 
-    const rimLight2 = new THREE.SpotLight(0x9966cc, 5.0) // Amethyst Rim
-    rimLight2.position.set(5, -2, -5)
-    rimLight2.lookAt(0, 0, 0)
-    this.scene.add(rimLight2)
+    // Rim light for that juicy glow
+    const rimLight = new THREE.PointLight(0xffaacc, 0.8, 10)
+    rimLight.position.set(0, 0, 3)
+    this.scene.add(rimLight)
 
     this.handleResize()
     window.addEventListener('resize', this.handleResize)
+  }
+
+  private createHalfSphere(): THREE.BufferGeometry {
+    const geo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2)
+    geo.rotateX(Math.PI / 2)
+    return geo
+  }
+
+  private createStrawberryGeometry(): THREE.BufferGeometry {
+    // Cone with rounded top for strawberry shape
+    const geo = new THREE.ConeGeometry(0.7, 1.2, 16)
+    geo.translate(0, 0.1, 0)
+    return geo
+  }
+
+  private createFruitMaterial(color: number, isInner: boolean = false): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: isInner ? 0.6 : 0.35,
+      metalness: 0.0,
+      emissive: color,
+      emissiveIntensity: isInner ? 0.15 : 0.05,
+    })
   }
 
   start() {
@@ -125,16 +151,23 @@ export class FruitGame {
     window.removeEventListener('resize', this.handleResize)
     this.fruits.forEach((fruit) => {
       this.scene.remove(fruit.mesh)
+      ;(fruit.mesh.material as THREE.Material).dispose()
     })
     this.effects.forEach((effect) => {
-      this.scene.remove(effect.mesh)
-      effect.mesh.dispose()
+      effect.halves.forEach(h => {
+        this.scene.remove(h.mesh)
+        ;(h.mesh.material as THREE.Material).dispose()
+      })
+      this.scene.remove(effect.juiceMesh)
+      this.scene.remove(effect.flashMesh)
+      effect.juiceMesh.dispose()
+      ;(effect.flashMesh.material as THREE.Material).dispose()
     })
-    this.crystalMaterial.dispose()
     this.sphereGeo.dispose()
-    this.coneGeo.dispose()
-    this.bananaGeo.dispose()
-    this.shardGeo.dispose()
+    this.halfSphereGeo.dispose()
+    this.strawberryGeo.dispose()
+    this.juiceGeo.dispose()
+    this.flashGeo.dispose()
     this.renderer.dispose()
   }
 
@@ -158,8 +191,8 @@ export class FruitGame {
 
   private update(delta: number) {
     this.spawnAccumulator += delta
-    if (this.spawnAccumulator >= 1.2) { // Slightly slower, elegant spawn
-      this.spawnAccumulator = Math.random() * 0.4
+    if (this.spawnAccumulator >= 1.0) {
+      this.spawnAccumulator = Math.random() * 0.3
       this.spawnFruit()
     }
     this.updateFruits(delta)
@@ -175,18 +208,26 @@ export class FruitGame {
       fruit.mesh.rotation.y += fruit.spin.y * delta
       fruit.mesh.rotation.z += fruit.spin.z * delta
 
+      // Smooth scale-in animation
       const age = (performance.now() - fruit.createdAt) / 1000
-      if (age < 0.5) {
-        const scale = THREE.MathUtils.lerp(0, 1, this.easeOutCubic(age / 0.5))
-        fruit.mesh.scale.copy(fruit.initialScale).multiplyScalar(scale)
+      if (age < 0.4) {
+        const t = this.easeOutBack(age / 0.4)
+        fruit.mesh.scale.copy(fruit.initialScale).multiplyScalar(t)
       }
 
       const alive = fruit.mesh.position.y > -2.5
       if (!alive) {
         this.scene.remove(fruit.mesh)
+        ;(fruit.mesh.material as THREE.Material).dispose()
       }
       return alive
     })
+  }
+
+  private easeOutBack(x: number): number {
+    const c1 = 1.70158
+    const c3 = c1 + 1
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
   }
 
   private easeOutCubic(x: number): number {
@@ -199,31 +240,52 @@ export class FruitGame {
       const progress = effect.elapsed / effect.lifespan
       
       if (progress >= 1) {
-        this.scene.remove(effect.mesh)
-        effect.mesh.dispose()
+        effect.halves.forEach(h => {
+          this.scene.remove(h.mesh)
+          ;(h.mesh.material as THREE.Material).dispose()
+        })
+        this.scene.remove(effect.juiceMesh)
+        this.scene.remove(effect.flashMesh)
+        effect.juiceMesh.dispose()
+        ;(effect.flashMesh.material as THREE.Material).dispose()
         return false
       }
 
-      const dummy = new THREE.Object3D()
-      
-      effect.particles.forEach((p, i) => {
-        p.velocity.addScaledVector(GRAVITY, delta)
-        p.position.addScaledVector(p.velocity, delta)
-        p.velocity.multiplyScalar(0.98) 
+      // Update slice halves
+      effect.halves.forEach(half => {
+        half.velocity.addScaledVector(GRAVITY, delta)
+        half.mesh.position.addScaledVector(half.velocity, delta)
+        half.mesh.rotation.x += half.spin.x * delta
+        half.mesh.rotation.y += half.spin.y * delta
+        half.mesh.rotation.z += half.spin.z * delta
         
-        p.rotation.addScaledVector(p.spin, delta)
-
-        dummy.position.copy(p.position)
-        dummy.rotation.setFromVector3(p.rotation)
-        
-        const scale = p.scale * (1 - progress)
-        dummy.scale.setScalar(scale)
-        
-        dummy.updateMatrix()
-        effect.mesh.setMatrixAt(i, dummy.matrix)
+        // Fade out
+        const mat = half.mesh.material as THREE.MeshStandardMaterial
+        mat.opacity = 1 - this.easeOutCubic(progress)
+        mat.transparent = true
       })
+
+      // Update juice particles
+      const dummy = new THREE.Object3D()
+      effect.juiceParticles.forEach((p, i) => {
+        p.velocity.addScaledVector(GRAVITY, delta * 0.5)
+        p.position.addScaledVector(p.velocity, delta)
+        p.velocity.multiplyScalar(0.96)
+        
+        dummy.position.copy(p.position)
+        const scale = p.scale * (1 - progress * 0.8)
+        dummy.scale.setScalar(scale)
+        dummy.updateMatrix()
+        effect.juiceMesh.setMatrixAt(i, dummy.matrix)
+      })
+      effect.juiceMesh.instanceMatrix.needsUpdate = true
       
-      effect.mesh.instanceMatrix.needsUpdate = true
+      // Update flash
+      const flashScale = 0.5 + progress * 2
+      effect.flashMesh.scale.setScalar(flashScale)
+      const flashMat = effect.flashMesh.material as THREE.MeshBasicMaterial
+      flashMat.opacity = (1 - progress) * 0.8
+
       return true
     })
   }
@@ -231,28 +293,24 @@ export class FruitGame {
   private spawnFruit() {
     const config = this.getRandomFruitConfig()
     
-    const material = this.crystalMaterial.clone()
-    material.color.setHex(config.color)
-    material.attenuationColor.setHex(config.color) // Deep internal color
-    
+    const material = this.createFruitMaterial(config.outerColor)
     const mesh = new THREE.Mesh(config.geometry, material)
     mesh.scale.copy(config.scale)
-    mesh.castShadow = true
     
     const startX = THREE.MathUtils.randFloatSpread(1.8)
-    mesh.position.set(startX, -1.5, THREE.MathUtils.randFloat(-0.5, 0.5))
+    mesh.position.set(startX, -1.5, THREE.MathUtils.randFloat(-0.3, 0.3))
     this.scene.add(mesh)
 
     const velocity = new THREE.Vector3(
-      THREE.MathUtils.randFloat(-0.5, 0.5),
+      THREE.MathUtils.randFloat(-0.4, 0.4),
       THREE.MathUtils.randFloat(5.5, 7.0),
-      THREE.MathUtils.randFloat(-0.2, 0.2),
+      THREE.MathUtils.randFloat(-0.15, 0.15),
     )
     
     const spin = new THREE.Vector3(
-      THREE.MathUtils.randFloat(-2, 2),
-      THREE.MathUtils.randFloat(-2, 2),
-      THREE.MathUtils.randFloat(-2, 2),
+      THREE.MathUtils.randFloat(-3, 3),
+      THREE.MathUtils.randFloat(-3, 3),
+      THREE.MathUtils.randFloat(-3, 3),
     )
 
     this.fruits.push({
@@ -261,84 +319,94 @@ export class FruitGame {
       velocity,
       spin,
       createdAt: performance.now(),
-      color: config.color,
-      initialScale: config.scale.clone()
+      outerColor: config.outerColor,
+      innerColor: config.innerColor,
+      initialScale: config.scale.clone(),
+      type: config.type
     })
   }
 
   private getRandomFruitConfig(): FruitConfig {
-    const types: FruitType[] = ['strawberry', 'banana', 'green-apple', 'apple', 'watermelon', 'blackberry', 'dragonfruit']
+    const types: FruitType[] = ['strawberry', 'orange', 'apple', 'watermelon', 'grape', 'lemon', 'kiwi']
     const type = types[Math.floor(Math.random() * types.length)]
 
-    // Gemstone / Jewel Palette
     switch (type) {
       case 'strawberry':
         return {
           type,
-          color: 0xe0115f, // Ruby
-          geometry: this.coneGeo,
-          scale: new THREE.Vector3(0.22, 0.22, 0.22),
+          outerColor: 0xff3344,  // Bright red
+          innerColor: 0xffcccc,  // Light pink inside
+          geometry: this.strawberryGeo,
+          scale: new THREE.Vector3(0.25, 0.25, 0.25),
         }
-      case 'banana':
+      case 'orange':
         return {
           type,
-          color: 0xffe135, // Topaz / Gold
-          geometry: this.bananaGeo,
-          scale: new THREE.Vector3(0.12, 0.12, 0.12),
-        }
-      case 'green-apple':
-        return {
-          type,
-          color: 0x50c878, // Emerald
+          outerColor: 0xff8800,  // Orange
+          innerColor: 0xffcc66,  // Light orange inside
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.24, 0.24, 0.24),
+          scale: new THREE.Vector3(0.28, 0.28, 0.28),
         }
       case 'apple':
         return {
           type,
-          color: 0x9a2a2a, // Garnet
+          outerColor: 0xcc2222,  // Red apple
+          innerColor: 0xffffee,  // Cream inside
           geometry: this.sphereGeo,
           scale: new THREE.Vector3(0.26, 0.26, 0.26),
         }
       case 'watermelon':
         return {
           type,
-          color: 0xff69b4, // Pink Tourmaline
+          outerColor: 0x2d5a27,  // Green rind
+          innerColor: 0xff4466,  // Pink flesh
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.22, 0.32, 0.22),
+          scale: new THREE.Vector3(0.24, 0.32, 0.24),
         }
-      case 'blackberry':
+      case 'grape':
         return {
           type,
-          color: 0x4b0082, // Indigo / Obsidian
+          outerColor: 0x6b2d8b,  // Purple
+          innerColor: 0xddccee,  // Light purple inside
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.2, 0.2, 0.2),
+          scale: new THREE.Vector3(0.18, 0.18, 0.18),
         }
-      case 'dragonfruit':
+      case 'lemon':
         return {
           type,
-          color: 0x9966cc, // Amethyst
+          outerColor: 0xffee00,  // Yellow
+          innerColor: 0xffffaa,  // Pale yellow inside
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.24, 0.3, 0.24),
+          scale: new THREE.Vector3(0.22, 0.26, 0.22),
+        }
+      case 'kiwi':
+        return {
+          type,
+          outerColor: 0x8b7355,  // Brown fuzzy outside
+          innerColor: 0x88cc44,  // Green inside
+          geometry: this.sphereGeo,
+          scale: new THREE.Vector3(0.2, 0.24, 0.2),
         }
     }
   }
 
-  private pickGestureTarget(gesture: GestureEvent) {
+  private pickGestureTarget(gesture: GestureEvent): FruitBody | null {
     if (!this.fruits.length) return null
-    const maxDistance = 0.25
-    let best: { fruit: FruitBody; distance: number } | null = null
-    this.fruits.forEach((fruit) => {
+    const maxDistance = 0.28
+    let bestFruit: FruitBody | null = null
+    let bestDistance = Infinity
+    for (const fruit of this.fruits) {
       const screen = this.projectToScreen(fruit)
       const dx = screen.x - gesture.origin.x
       const dy = screen.y - gesture.origin.y
       const distance = Math.hypot(dx, dy)
-      if (distance > maxDistance) return
-      if (!best || distance < best.distance) {
-        best = { fruit, distance }
+      if (distance > maxDistance) continue
+      if (distance < bestDistance) {
+        bestFruit = fruit
+        bestDistance = distance
       }
-    })
-    return best?.fruit ?? null
+    }
+    return bestFruit
   }
 
   private projectToScreen(fruit: FruitBody) {
@@ -350,54 +418,121 @@ export class FruitGame {
     }
   }
 
-  private sliceFruit(fruit: FruitBody, _gesture: GestureEvent) {
-    this.createCrystalExplosion(fruit.mesh.position.clone(), fruit.color)
+  private sliceFruit(fruit: FruitBody, gesture: GestureEvent) {
+    const origin = fruit.mesh.position.clone()
+    const scale = fruit.initialScale.clone()
+    
+    // Create slice effect
+    this.createSliceEffect(origin, scale, fruit.outerColor, fruit.innerColor, gesture, fruit.velocity.clone())
+    
+    // Remove original fruit
     this.scene.remove(fruit.mesh)
-    this.fruits = this.fruits.filter((f) => f.id !== fruit.id)
     ;(fruit.mesh.material as THREE.Material).dispose()
+    this.fruits = this.fruits.filter((f) => f.id !== fruit.id)
   }
 
-  private createCrystalExplosion(origin: THREE.Vector3, color: number) {
-    const particleCount = 24
-    const material = this.crystalMaterial.clone()
-    material.color.setHex(color)
-    material.emissive.setHex(0xffffff)
-    material.emissiveIntensity = 0.8
+  private createSliceEffect(
+    origin: THREE.Vector3, 
+    scale: THREE.Vector3, 
+    outerColor: number, 
+    innerColor: number,
+    gesture: GestureEvent,
+    fruitVelocity: THREE.Vector3
+  ) {
+    const halves: SliceHalf[] = []
     
-    const mesh = new THREE.InstancedMesh(this.shardGeo, material, particleCount)
+    // Slice direction based on gesture
+    const sliceAngle = Math.atan2(gesture.direction.y, gesture.direction.x)
     
-    const particles: Particle[] = []
+    // Create two halves
+    for (let i = 0; i < 2; i++) {
+      // Inner face (shows fruit inside)
+      const innerMat = this.createFruitMaterial(innerColor, true)
+      const halfMesh = new THREE.Mesh(this.halfSphereGeo, innerMat)
+      
+      // Outer shell
+      const outerMat = this.createFruitMaterial(outerColor)
+      const outerMesh = new THREE.Mesh(this.halfSphereGeo, outerMat)
+      outerMesh.rotation.x = Math.PI
+      halfMesh.add(outerMesh)
+      
+      halfMesh.scale.copy(scale)
+      halfMesh.position.copy(origin)
+      
+      // Rotate based on slice direction
+      halfMesh.rotation.z = sliceAngle + (i === 0 ? 0 : Math.PI)
+      
+      // Split velocity
+      const splitDir = i === 0 ? 1 : -1
+      const splitSpeed = 2.5
+      const velocity = fruitVelocity.clone()
+      velocity.x += Math.cos(sliceAngle + Math.PI / 2) * splitDir * splitSpeed
+      velocity.y += Math.sin(sliceAngle + Math.PI / 2) * splitDir * splitSpeed + 2
+      velocity.z += THREE.MathUtils.randFloat(-0.5, 0.5)
+      
+      const spin = new THREE.Vector3(
+        THREE.MathUtils.randFloat(-8, 8),
+        THREE.MathUtils.randFloat(-8, 8),
+        THREE.MathUtils.randFloat(-4, 4),
+      )
+
+      this.scene.add(halfMesh)
+      halves.push({ mesh: halfMesh, velocity, spin, life: 0 })
+    }
     
-    for (let i = 0; i < particleCount; i++) {
+    // Create juice particles
+    const juiceCount = 20
+    const juiceMat = new THREE.MeshBasicMaterial({
+      color: innerColor,
+      transparent: true,
+      opacity: 0.8,
+    })
+    const juiceMesh = new THREE.InstancedMesh(this.juiceGeo, juiceMat, juiceCount)
+    
+    const juiceParticles: JuiceParticle[] = []
+    for (let i = 0; i < juiceCount; i++) {
       const angle = THREE.MathUtils.randFloat(0, Math.PI * 2)
-      const speed = THREE.MathUtils.randFloat(2, 5)
+      const speed = THREE.MathUtils.randFloat(3, 7)
       const velocity = new THREE.Vector3(
         Math.cos(angle) * speed,
-        Math.sin(angle) * speed,
-        THREE.MathUtils.randFloat(-2, 2)
+        Math.sin(angle) * speed * 0.6 + 3,
+        THREE.MathUtils.randFloat(-1, 1)
       )
       
-      particles.push({
-        position: origin.clone(),
+      juiceParticles.push({
+        position: origin.clone().add(new THREE.Vector3(
+          THREE.MathUtils.randFloat(-0.1, 0.1),
+          THREE.MathUtils.randFloat(-0.1, 0.1),
+          THREE.MathUtils.randFloat(-0.1, 0.1)
+        )),
         velocity,
-        scale: THREE.MathUtils.randFloat(0.05, 0.15),
-        rotation: new THREE.Vector3(Math.random(), Math.random(), Math.random()),
-        spin: new THREE.Vector3(
-            Math.random() - 0.5, 
-            Math.random() - 0.5, 
-            Math.random() - 0.5
-        ).multiplyScalar(10),
-        life: 0,
-        maxLife: 1.0
+        scale: THREE.MathUtils.randFloat(0.02, 0.06),
+        life: 0
       })
     }
+    
+    this.scene.add(juiceMesh)
+    
+    // Create flash effect
+    const flashMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide,
+    })
+    const flashMesh = new THREE.Mesh(this.flashGeo, flashMat)
+    flashMesh.position.copy(origin)
+    flashMesh.lookAt(this.camera.position)
+    flashMesh.scale.setScalar(0.3)
+    this.scene.add(flashMesh)
 
-    this.scene.add(mesh)
     this.effects.push({
-      mesh,
-      particles,
+      halves,
+      juiceParticles,
+      juiceMesh,
+      flashMesh,
       elapsed: 0,
-      lifespan: 1.0
+      lifespan: 1.2
     })
   }
 
