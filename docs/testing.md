@@ -17,7 +17,8 @@
 5. Bring the second hand into frame and verify the counter reads `2/2` while both skeletons render simultaneously.
 6. Move out of frame and ensure the banner changes to “Show your hand to verify tracking”.
 7. The Gesture Telemetry card should update whenever a slice is detected, showing hand, speed, strength (percentage), and direction. If it stays idle, increase swipe speed or lighting.
-8. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
+8. Watch the Fruit Playground canvas for periodic spawns; perform a slice whose hand position overlaps an on-screen fruit (move your hand to where the fruit appears in the webcam feed). Only those aligned gestures should remove the fruit and trigger the burst animation. The next fruit should spawn within ~1s.
+9. Click the “Retry” button after revoking permissions in browser settings to validate recovery.
 
 ### Gesture detection sanity
 

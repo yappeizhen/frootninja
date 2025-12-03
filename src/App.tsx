@@ -1,5 +1,5 @@
 import './App.css'
-import { GestureDebugPanel, WebcamPreview } from '@/ui/components'
+import { FruitCanvas, GestureDebugPanel, WebcamPreview } from '@/ui/components'
 
 export const App = () => {
   return (
@@ -26,6 +26,7 @@ export const App = () => {
           <WebcamPreview />
           <GestureDebugPanel />
         </div>
+        <FruitCanvas />
       </div>
     </main>
   )

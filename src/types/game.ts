@@ -33,6 +33,7 @@ export interface GestureEvent {
   strength: number
   direction: { x: number; y: number }
   timestamp: number
+  origin: { x: number; y: number; z: number }
 }
 
 export interface GameState {

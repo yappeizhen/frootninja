@@ -46,7 +46,7 @@ export class GestureController {
 
       const state = this.ensureState(hand.handedness)
       const timestamp = frame.timestamp
-      if (!state.lastPoint || !state.lastTimestamp) {
+      if (state.lastPoint === undefined || state.lastTimestamp === undefined) {
         state.lastPoint = tip
         state.lastTimestamp = timestamp
         return
@@ -85,6 +85,7 @@ export class GestureController {
             strength,
             direction,
             timestamp,
+            origin: { x: tip.x, y: tip.y, z: tip.z },
           }),
         )
         state.lastGestureAt = timestamp
@@ -105,7 +106,7 @@ export class GestureController {
   }
 
   private isOffCooldown(state: MotionState, timestamp: number) {
-    if (!state.lastGestureAt) return true
+    if (state.lastGestureAt === undefined) return true
     return timestamp - state.lastGestureAt >= this.config.cooldownMs
   }
 
