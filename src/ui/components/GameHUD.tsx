@@ -6,7 +6,11 @@ const formatTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-export const GameHUD = () => {
+interface GameHUDProps {
+  bombHit?: boolean
+}
+
+export const GameHUD = ({ bombHit = false }: GameHUDProps) => {
   const { score, combo, lives, timeRemaining, roundDuration, highScore } = useGameStore()
   
   const timerProgress = (timeRemaining / roundDuration) * 100
@@ -50,11 +54,11 @@ export const GameHUD = () => {
       </div>
 
       {/* Lives */}
-      <div className="hud-lives">
+      <div className={`hud-lives ${bombHit ? 'hud-lives--hit' : ''}`}>
         {Array.from({ length: 5 }).map((_, i) => (
           <span
             key={i}
-            className={`hud-lives__heart ${i < lives ? 'hud-lives__heart--active' : ''}`}
+            className={`hud-lives__heart ${i < lives ? 'hud-lives__heart--active' : ''} ${bombHit && i === lives ? 'hud-lives__heart--lost' : ''}`}
           >
             ♥
           </span>
@@ -71,4 +75,3 @@ export const GameHUD = () => {
     </div>
   )
 }
-

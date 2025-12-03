@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { useGameStore } from '@/state/gameStore'
@@ -14,6 +14,7 @@ export const FruitLayer = () => {
   const { lastGesture } = useGestureDetection()
   const { isPlaying, gameMode, lives, registerSlice, setLives, endRound } = useGameStore()
   const { registerPlayerSlice } = usePlayerStore()
+  const [bombHit, setBombHit] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -58,6 +59,10 @@ export const FruitLayer = () => {
         const newLives = lives - 1
         setLives(newLives)
         
+        // Trigger bomb hit visual feedback
+        setBombHit(true)
+        setTimeout(() => setBombHit(false), 500)
+        
         // End game if no lives left
         if (newLives <= 0) {
           endRound()
@@ -87,8 +92,11 @@ export const FruitLayer = () => {
     <div className="playfield-overlay">
       <canvas ref={canvasRef} className="playfield-fruit-canvas" />
       <GestureTrailCanvas gesture={lastGesture ?? null} />
-      {isPlaying && gameMode === 'solo' && <GameHUD />}
+      {isPlaying && gameMode === 'solo' && <GameHUD bombHit={bombHit} />}
       {isPlaying && gameMode === 'versus' && <PlayerScores />}
+      
+      {/* Bomb hit flash overlay */}
+      {bombHit && <div className="bomb-flash-overlay" />}
     </div>
   )
 }
