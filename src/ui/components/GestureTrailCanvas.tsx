@@ -18,8 +18,8 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const trailsRef = useRef<GestureTrail[]>([])
-  const lastGestureId = useRef<string>()
-  const rafRef = useRef<number>()
+  const lastGestureId = useRef<string | undefined>(undefined)
+  const rafRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     const canvas = canvasRef.current

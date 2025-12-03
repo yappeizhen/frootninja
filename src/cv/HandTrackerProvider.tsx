@@ -14,7 +14,7 @@ export const HandTrackerProvider = ({
   factory,
   maxHands = 2,
 }: HandTrackerProviderProps) => {
-  const trackerRef = useRef<HandTracker>()
+  const trackerRef = useRef<HandTracker | undefined>(undefined)
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const [status, setStatus] = useState<HandTrackingStatus>('idle')
   const [frame, setFrame] = useState<HandFrame | null>(null)

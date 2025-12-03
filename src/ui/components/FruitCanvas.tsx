@@ -5,8 +5,8 @@ import { GestureTrailCanvas } from '@/ui/components/GestureTrailCanvas'
 
 export const FruitLayer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const gameRef = useRef<FruitGame>()
-  const resizeObserverRef = useRef<ResizeObserver>()
+  const gameRef = useRef<FruitGame | undefined>(undefined)
+  const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   const { lastGesture } = useGestureDetection()
 
   useEffect(() => {
