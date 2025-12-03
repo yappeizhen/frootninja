@@ -101,14 +101,6 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
     }
   }, [lastGesture])
 
-  const timeSinceGesture = useMemo(() => {
-    if (!lastGesture) return null
-    const seconds = Math.floor((Date.now() - lastGesture.timestamp) / 1000)
-    if (seconds < 5) return 'Just now'
-    if (seconds < 60) return `${seconds}s ago`
-    return `${Math.floor(seconds / 60)}m ago`
-  }, [lastGesture])
-
   return (
     <aside className={`side-panel ${isOpen ? 'side-panel--open' : 'side-panel--closed'}`}>
       <button 
@@ -197,11 +189,6 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
               <DirectionIndicator x={summary.direction.x} y={summary.direction.y} />
             </div>
 
-            {/* Timestamp */}
-            <div className="timestamp-badge">
-              <span className="timestamp-badge__dot" />
-              <span>{timeSinceGesture}</span>
-            </div>
           </>
         ) : (
           <div className="empty-state">
