@@ -58,12 +58,16 @@ export class FruitGame {
   private spawnAccumulator = 0
   private canvas: HTMLCanvasElement
   private projectionHelper = new THREE.Vector3()
+  private envMap: THREE.Texture | null = null
 
-  // Shared Geometries
-  private sphereGeo = new THREE.SphereGeometry(1, 32, 32)
+  // Shared Geometries - higher poly for smoother look
+  private sphereGeo = new THREE.SphereGeometry(1, 64, 64)
   private halfSphereGeo: THREE.BufferGeometry
   private strawberryGeo: THREE.BufferGeometry
-  private juiceGeo = new THREE.SphereGeometry(1, 8, 8)
+  private orangeGeo: THREE.BufferGeometry
+  private lemonGeo: THREE.BufferGeometry
+  private appleGeo: THREE.BufferGeometry
+  private juiceGeo = new THREE.SphereGeometry(1, 12, 12)
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -71,8 +75,11 @@ export class FruitGame {
     // Create half sphere geometry for sliced fruit
     this.halfSphereGeo = this.createHalfSphere()
     
-    // Create strawberry-like geometry
+    // Create fruit-specific geometries
     this.strawberryGeo = this.createStrawberryGeometry()
+    this.orangeGeo = this.createOrangeGeometry()
+    this.lemonGeo = this.createLemonGeometry()
+    this.appleGeo = this.createAppleGeometry()
     
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -81,31 +88,101 @@ export class FruitGame {
     })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.renderer.toneMappingExposure = 1.2
+    this.renderer.toneMappingExposure = 1.4
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
     
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
     this.camera.position.set(0, 1.5, 4)
     this.camera.lookAt(0, 1, 0)
 
-    // Bright, cheerful lighting for fruits
-    this.scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    // Create procedural environment map for realistic reflections
+    this.createEnvironmentMap()
+
+    // Studio-style lighting for realistic fruit rendering
+    this.scene.add(new THREE.AmbientLight(0xfff5ee, 0.4))
     
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2)
+    // Key light - warm sunlight
+    const keyLight = new THREE.DirectionalLight(0xfffaf0, 1.5)
     keyLight.position.set(5, 8, 5)
     this.scene.add(keyLight)
     
-    // Soft fill light
-    const fillLight = new THREE.DirectionalLight(0xffeedd, 0.4)
-    fillLight.position.set(-3, 2, 3)
+    // Fill light - cool blue for contrast
+    const fillLight = new THREE.DirectionalLight(0xe6f0ff, 0.6)
+    fillLight.position.set(-4, 3, 3)
     this.scene.add(fillLight)
 
-    // Rim light for that juicy glow
-    const rimLight = new THREE.PointLight(0xffaacc, 0.8, 10)
-    rimLight.position.set(0, 0, 3)
+    // Rim/back light for edge definition
+    const rimLight = new THREE.DirectionalLight(0xffeedd, 0.8)
+    rimLight.position.set(0, -2, -5)
     this.scene.add(rimLight)
+    
+    // Subtle colored accent lights
+    const accentLight1 = new THREE.PointLight(0xff9966, 0.4, 8)
+    accentLight1.position.set(3, 2, 2)
+    this.scene.add(accentLight1)
+    
+    const accentLight2 = new THREE.PointLight(0x99ccff, 0.3, 8)
+    accentLight2.position.set(-3, 1, 2)
+    this.scene.add(accentLight2)
 
     this.handleResize()
     window.addEventListener('resize', this.handleResize)
+  }
+
+  private createEnvironmentMap() {
+    // Create a simple gradient environment for reflections
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer)
+    pmremGenerator.compileEquirectangularShader()
+    
+    // Create a simple procedural environment
+    const envScene = new THREE.Scene()
+    
+    // Gradient sky dome
+    const skyGeo = new THREE.SphereGeometry(50, 32, 32)
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: {
+        topColor: { value: new THREE.Color(0xffffff) },
+        bottomColor: { value: new THREE.Color(0x8899bb) },
+      },
+      vertexShader: `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPosition.xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 topColor;
+        uniform vec3 bottomColor;
+        varying vec3 vWorldPosition;
+        void main() {
+          float h = normalize(vWorldPosition).y * 0.5 + 0.5;
+          gl_FragColor = vec4(mix(bottomColor, topColor, h), 1.0);
+        }
+      `,
+    })
+    const sky = new THREE.Mesh(skyGeo, skyMat)
+    envScene.add(sky)
+    
+    // Add some bright spots for specular highlights
+    const lightGeo = new THREE.SphereGeometry(2, 16, 16)
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    const light1 = new THREE.Mesh(lightGeo, lightMat)
+    light1.position.set(20, 30, 20)
+    envScene.add(light1)
+    
+    const light2 = new THREE.Mesh(lightGeo, lightMat.clone())
+    light2.position.set(-15, 20, 15)
+    envScene.add(light2)
+    
+    // Generate environment map
+    const envRT = pmremGenerator.fromScene(envScene, 0.04)
+    this.envMap = envRT.texture
+    this.scene.environment = this.envMap
+    
+    pmremGenerator.dispose()
   }
 
   private createHalfSphere(): THREE.BufferGeometry {
@@ -115,26 +192,123 @@ export class FruitGame {
   }
 
   private createStrawberryGeometry(): THREE.BufferGeometry {
-    // Cone with rounded top for strawberry shape
-    const geo = new THREE.ConeGeometry(0.7, 1.2, 16)
-    geo.translate(0, 0.1, 0)
+    // Use LatheGeometry for organic strawberry shape
+    const points: THREE.Vector2[] = []
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20
+      // Strawberry profile: narrow at top, wide in middle, pointed at bottom
+      const y = 1.2 * (1 - t) - 0.3
+      let r: number
+      if (t < 0.15) {
+        r = 0.15 + t * 1.5  // Narrow top
+      } else if (t < 0.5) {
+        r = 0.35 + Math.sin((t - 0.15) * Math.PI / 0.35) * 0.35  // Bulge
+      } else {
+        r = 0.7 * Math.pow(1 - (t - 0.5) / 0.5, 1.5)  // Taper to point
+      }
+      points.push(new THREE.Vector2(r, y))
+    }
+    return new THREE.LatheGeometry(points, 32)
+  }
+
+  private createOrangeGeometry(): THREE.BufferGeometry {
+    // Slightly flattened sphere with subtle dimples
+    const geo = new THREE.SphereGeometry(1, 64, 64)
+    const pos = geo.attributes.position
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i)
+      // Flatten poles slightly
+      pos.setY(i, y * 0.92)
+      // Add subtle surface variation
+      const x = pos.getX(i)
+      const z = pos.getZ(i)
+      const noise = Math.sin(x * 15) * Math.cos(z * 15) * 0.015
+      pos.setX(i, x + x * noise)
+      pos.setZ(i, z + z * noise)
+    }
+    geo.computeVertexNormals()
     return geo
   }
 
-  private createFruitMaterial(color: number, isInner: boolean = false): THREE.MeshPhysicalMaterial {
-    return new THREE.MeshPhysicalMaterial({
+  private createLemonGeometry(): THREE.BufferGeometry {
+    // Elongated ellipsoid with pointed ends
+    const points: THREE.Vector2[] = []
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24
+      const angle = t * Math.PI
+      // Lemon profile: pointed ends, oval middle
+      const y = Math.cos(angle) * 0.65
+      let r = Math.sin(angle) * 0.45
+      // Sharpen the ends
+      if (t < 0.15 || t > 0.85) {
+        r *= 0.7
+      }
+      points.push(new THREE.Vector2(r, y))
+    }
+    return new THREE.LatheGeometry(points, 32)
+  }
+
+  private createAppleGeometry(): THREE.BufferGeometry {
+    // Apple with indentation at top
+    const points: THREE.Vector2[] = []
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24
+      const angle = t * Math.PI
+      let y = Math.cos(angle) * 0.55
+      let r = Math.sin(angle) * 0.5
+      // Create indent at top
+      if (t < 0.2) {
+        r *= 0.85 + t * 0.75
+        y -= (0.2 - t) * 0.3
+      }
+      // Slight bulge at bottom
+      if (t > 0.6) {
+        r *= 1.05
+      }
+      points.push(new THREE.Vector2(r, y))
+    }
+    return new THREE.LatheGeometry(points, 32)
+  }
+
+  private createFruitMaterial(color: number, isInner: boolean = false, fruitType?: FruitType): THREE.MeshPhysicalMaterial {
+    // Subsurface scattering color (lighter version of base)
+    const baseColor = new THREE.Color(color)
+    const sssColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.3)
+    
+    const mat = new THREE.MeshPhysicalMaterial({
       color: color,
-      roughness: isInner ? 0.35 : 0.12,
-      metalness: 0.05,
-      clearcoat: isInner ? 0.4 : 0.9,
-      clearcoatRoughness: 0.08,
-      reflectivity: 1.0,
+      roughness: isInner ? 0.45 : 0.18,
+      metalness: 0.0,
+      
+      // Clearcoat for waxy fruit skin
+      clearcoat: isInner ? 0.2 : 0.7,
+      clearcoatRoughness: isInner ? 0.3 : 0.15,
+      
+      // Subsurface scattering simulation
+      transmission: isInner ? 0.15 : 0.35,
+      thickness: 1.2,
+      ior: 1.4,
+      attenuationColor: sssColor,
+      attenuationDistance: 0.5,
+      
+      // Sheen for fuzzy fruits (peach, kiwi skin)
+      sheen: fruitType === 'kiwi' ? 0.8 : 0.1,
+      sheenRoughness: fruitType === 'kiwi' ? 0.8 : 0.3,
+      sheenColor: new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.5),
+      
+      // Subtle glow
       emissive: color,
-      emissiveIntensity: isInner ? 0.25 : 0.12,
-      transmission: isInner ? 0.1 : 0.25,
-      thickness: 0.8,
-      ior: 1.5,
+      emissiveIntensity: isInner ? 0.15 : 0.05,
+      
+      // Use environment map
+      envMapIntensity: isInner ? 0.3 : 0.6,
     })
+    
+    if (this.envMap) {
+      mat.envMap = this.envMap
+    }
+    
+    return mat
   }
 
   start() {
@@ -168,7 +342,11 @@ export class FruitGame {
     this.sphereGeo.dispose()
     this.halfSphereGeo.dispose()
     this.strawberryGeo.dispose()
+    this.orangeGeo.dispose()
+    this.lemonGeo.dispose()
+    this.appleGeo.dispose()
     this.juiceGeo.dispose()
+    if (this.envMap) this.envMap.dispose()
     this.renderer.dispose()
   }
 
@@ -286,7 +464,7 @@ export class FruitGame {
   private spawnFruit() {
     const config = this.getRandomFruitConfig()
     
-    const material = this.createFruitMaterial(config.outerColor)
+    const material = this.createFruitMaterial(config.outerColor, false, config.type)
     const mesh = new THREE.Mesh(config.geometry, material)
     mesh.scale.copy(config.scale)
     
@@ -337,7 +515,7 @@ export class FruitGame {
           type,
           outerColor: 0xe65c00,  // Deep orange
           innerColor: 0xffb347,  // Rich amber inside
-          geometry: this.sphereGeo,
+          geometry: this.orangeGeo,
           scale: new THREE.Vector3(0.28, 0.28, 0.28),
         }
       case 'apple':
@@ -345,8 +523,8 @@ export class FruitGame {
           type,
           outerColor: 0x8b0000,  // Dark red
           innerColor: 0xfff8dc,  // Cornsilk inside
-          geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.26, 0.26, 0.26),
+          geometry: this.appleGeo,
+          scale: new THREE.Vector3(0.32, 0.32, 0.32),
         }
       case 'watermelon':
         return {
@@ -354,7 +532,7 @@ export class FruitGame {
           outerColor: 0x1a4d1a,  // Deep forest green
           innerColor: 0xe63950,  // Deep pink flesh
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.24, 0.32, 0.24),
+          scale: new THREE.Vector3(0.26, 0.34, 0.26),
         }
       case 'grape':
         return {
@@ -369,8 +547,8 @@ export class FruitGame {
           type,
           outerColor: 0xe6c200,  // Deep golden yellow
           innerColor: 0xfff59d,  // Soft lemon inside
-          geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.22, 0.26, 0.22),
+          geometry: this.lemonGeo,
+          scale: new THREE.Vector3(0.28, 0.28, 0.28),
         }
       case 'kiwi':
         return {
@@ -378,7 +556,7 @@ export class FruitGame {
           outerColor: 0x5c4033,  // Deep brown
           innerColor: 0x6bbf59,  // Vibrant green inside
           geometry: this.sphereGeo,
-          scale: new THREE.Vector3(0.2, 0.24, 0.2),
+          scale: new THREE.Vector3(0.22, 0.26, 0.22),
         }
     }
   }
