@@ -87,15 +87,23 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     try {
       // Fetch personal best from Firebase
       const firebaseHighScore = await getPersonalBest('solo')
-      const localHighScore = get().highScore
+      const localHighScore = loadHighScore() // Re-read from localStorage to ensure fresh
+      const currentStoreHighScore = get().highScore
       
-      // Use the higher of the two
-      const bestScore = Math.max(firebaseHighScore, localHighScore)
+      // Find the maximum across all sources
+      const bestScore = Math.max(firebaseHighScore, localHighScore, currentStoreHighScore)
       
-      if (bestScore > localHighScore) {
-        saveHighScore(bestScore)
-        set({ highScore: bestScore })
+      // Update localStorage and store if we found a higher score
+      if (bestScore > 0) {
+        if (bestScore !== localHighScore) {
+          saveHighScore(bestScore)
+        }
+        if (bestScore !== currentStoreHighScore) {
+          set({ highScore: bestScore })
+        }
       }
+      
+      console.log(`High score sync: Firebase=${firebaseHighScore}, Local=${localHighScore}, Best=${bestScore}`)
     } catch (error) {
       console.error('Failed to sync high score:', error)
     }

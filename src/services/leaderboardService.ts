@@ -213,21 +213,12 @@ export const getPersonalBest = async (gameMode?: GameMode): Promise<number> => {
     const deviceId = getDeviceId()
     const scoresRef = collection(db, COLLECTION_NAME)
     
-    // Query for this device's scores, ordered by score descending
-    const q = gameMode
-      ? query(
-          scoresRef, 
-          where('deviceId', '==', deviceId),
-          where('gameMode', '==', gameMode),
-          orderBy('score', 'desc'),
-          limit(1)
-        )
-      : query(
-          scoresRef, 
-          where('deviceId', '==', deviceId),
-          orderBy('score', 'desc'),
-          limit(1)
-        )
+    // Simple query by deviceId only (avoids needing composite index)
+    const q = query(
+      scoresRef, 
+      where('deviceId', '==', deviceId),
+      limit(50) // Fetch recent scores for this device
+    )
     
     const snapshot = await getDocs(q)
     
@@ -235,8 +226,18 @@ export const getPersonalBest = async (gameMode?: GameMode): Promise<number> => {
       return 0
     }
     
-    const data = snapshot.docs[0].data() as ScoreDocument
-    return data.score
+    // Find the highest score for the specified game mode
+    let highestScore = 0
+    for (const doc of snapshot.docs) {
+      const data = doc.data() as ScoreDocument
+      if (!gameMode || data.gameMode === gameMode) {
+        if (data.score > highestScore) {
+          highestScore = data.score
+        }
+      }
+    }
+    
+    return highestScore
   } catch (error) {
     console.error('Failed to get personal best:', error)
     return 0
