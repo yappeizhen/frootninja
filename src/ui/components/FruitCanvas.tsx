@@ -15,6 +15,7 @@ export const FruitLayer = () => {
   const { isPlaying, gameMode, lives, registerSlice, setLives, endRound, resetCombo } = useGameStore()
   const { registerPlayerSlice } = usePlayerStore()
   const [bombHit, setBombHit] = useState(false)
+  const [pointsDocked, setPointsDocked] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -87,7 +88,11 @@ export const FruitLayer = () => {
         
         // Trigger bomb hit visual feedback
         setBombHit(true)
-        setTimeout(() => setBombHit(false), 500)
+        setPointsDocked(true)
+        setTimeout(() => {
+          setBombHit(false)
+          setPointsDocked(false)
+        }, 600)
         
         // End game if no lives left
         if (newLives <= 0) {
@@ -118,7 +123,7 @@ export const FruitLayer = () => {
     <div className="playfield-overlay">
       <canvas ref={canvasRef} className="playfield-fruit-canvas" />
       <GestureTrailCanvas gesture={lastGesture ?? null} />
-      {isPlaying && gameMode === 'solo' && <GameHUD bombHit={bombHit} />}
+      {isPlaying && gameMode === 'solo' && <GameHUD bombHit={bombHit} pointsDocked={pointsDocked} />}
       {isPlaying && gameMode === 'versus' && <PlayerScores />}
       
       {/* Bomb hit flash overlay */}

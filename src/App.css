@@ -981,6 +981,7 @@ h1, h2, h3 {
 
 /* Score */
 .hud-score {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1016,6 +1017,63 @@ h1, h2, h3 {
   color: var(--pastel-peach);
   animation: comboPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-shadow: 0 0 12px var(--pastel-peach-soft);
+}
+
+.hud-score__value--docked {
+  animation: scoreFlash 0.6s ease;
+  color: #ff3b5c !important;
+  text-shadow: 0 0 20px rgba(255, 59, 92, 0.9), 0 0 40px rgba(255, 59, 92, 0.6);
+}
+
+.hud-score__dock-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ff3b5c;
+  text-shadow: 
+    0 0 20px rgba(255, 59, 92, 1),
+    0 0 40px rgba(255, 59, 92, 0.8),
+    0 0 60px rgba(255, 59, 92, 0.5),
+    2px 2px 0 #000;
+  animation: dockPop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes scoreFlash {
+  0%, 100% { 
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.3);
+  }
+  30% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes dockPop {
+  0% { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.3); 
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% { 
+    opacity: 0; 
+    transform: translate(-50%, -80%) scale(0.8); 
+  }
 }
 
 @keyframes comboPop {

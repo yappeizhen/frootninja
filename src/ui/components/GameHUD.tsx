@@ -8,9 +8,10 @@ const formatTime = (seconds: number): string => {
 
 interface GameHUDProps {
   bombHit?: boolean
+  pointsDocked?: boolean
 }
 
-export const GameHUD = ({ bombHit = false }: GameHUDProps) => {
+export const GameHUD = ({ bombHit = false, pointsDocked = false }: GameHUDProps) => {
   const { score, combo, lives, timeRemaining, roundDuration, highScore } = useGameStore()
   
   const timerProgress = (timeRemaining / roundDuration) * 100
@@ -47,9 +48,14 @@ export const GameHUD = ({ bombHit = false }: GameHUDProps) => {
       {/* Score */}
       <div className="hud-score">
         <span className="hud-score__label">Score</span>
-        <span className="hud-score__value">{score.toLocaleString()}</span>
+        <span className={`hud-score__value ${pointsDocked ? 'hud-score__value--docked' : ''}`}>
+          {score.toLocaleString()}
+        </span>
         {combo > 1 && (
           <span className="hud-score__combo">x{combo}</span>
+        )}
+        {pointsDocked && (
+          <span className="hud-score__dock-indicator">-10</span>
         )}
       </div>
 
