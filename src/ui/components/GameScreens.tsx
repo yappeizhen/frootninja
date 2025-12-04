@@ -1,5 +1,11 @@
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '@/state/gameStore'
 import { usePlayerStore } from '@/state/playerStore'
+import { useUserStore } from '@/state/userStore'
+import { submitScore, getPlayerRank } from '@/services/leaderboardService'
+import { isFirebaseEnabled } from '@/services/firebase'
+import { UsernamePrompt } from './UsernamePrompt'
+import { Leaderboard } from './Leaderboard'
 
 interface StartScreenProps {
   onStart: () => void
@@ -7,6 +13,11 @@ interface StartScreenProps {
 
 export const StartScreen = ({ onStart }: StartScreenProps) => {
   const { highScore, gameMode, setGameMode } = useGameStore()
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+
+  if (showLeaderboard) {
+    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+  }
 
   return (
     <div className="game-screen-overlay">
@@ -40,6 +51,13 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
           Start Game
         </button>
 
+        <button 
+          className="game-btn game-btn--secondary" 
+          onClick={() => setShowLeaderboard(true)}
+        >
+          🏆 Leaderboard
+        </button>
+
         {highScore > 0 && gameMode === 'solo' && (
           <div className="game-screen__highscore">
             <span className="game-screen__highscore-label">High Score</span>
@@ -63,14 +81,126 @@ interface GameOverScreenProps {
   isNewHighScore: boolean
 }
 
-export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: GameOverScreenProps) => {
-  const { score, highScore, combo } = useGameStore()
+type GameOverView = 'username' | 'results' | 'leaderboard'
 
+// Compute initial view synchronously to avoid setState-in-effect
+const getInitialView = (username: string, score: number): GameOverView => {
+  if (!username && isFirebaseEnabled() && score > 0) {
+    return 'username'
+  }
+  return 'results'
+}
+
+export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: GameOverScreenProps) => {
+  const { score, highScore, combo, gameMode, challengeTarget } = useGameStore()
+  const { username, setUsername } = useUserStore()
+  const [view, setView] = useState<GameOverView>(() => getInitialView(username, score))
+  const [rank, setRank] = useState<number>(0)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
+
+  const challengeWon = challengeTarget !== null && score > challengeTarget
+
+  const handleShareChallenge = useCallback(async () => {
+    const challengeUrl = `${window.location.origin}${window.location.pathname}?challenge=${score}`
+    const shareText = `🍉 I scored ${score.toLocaleString()} points in Frootninja! Can you beat my score?`
+    
+    // Try native share first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Frootninja Challenge',
+          text: shareText,
+          url: challengeUrl,
+        })
+        return
+      } catch {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+    
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n${challengeUrl}`)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2000)
+    } catch {
+      // Clipboard failed, try prompt
+      window.prompt('Copy this link to challenge a friend:', challengeUrl)
+    }
+  }, [score])
+
+  const handleScoreSubmit = useCallback(async (name: string) => {
+    if (hasSubmitted || isSubmitting) return
+    
+    setIsSubmitting(true)
+    setUsername(name)
+    
+    const success = await submitScore(name, score, gameMode)
+    if (success) {
+      const playerRank = await getPlayerRank(score, gameMode)
+      setRank(playerRank)
+      setHasSubmitted(true)
+    }
+    
+    setIsSubmitting(false)
+    setView('results')
+  }, [score, gameMode, setUsername, hasSubmitted, isSubmitting])
+
+  const handleSkipSubmit = useCallback(() => {
+    setView('results')
+  }, [])
+
+  // Auto-submit on mount if username exists
+  const hasAutoSubmitted = useRef(false)
+  useEffect(() => {
+    if (hasAutoSubmitted.current) return
+    if (username && isFirebaseEnabled() && score > 0 && !hasSubmitted) {
+      hasAutoSubmitted.current = true
+      // Intentionally calling setState in effect for auto-submit flow
+      handleScoreSubmit(username) // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [username, score, hasSubmitted, handleScoreSubmit])
+
+  // Username prompt view
+  if (view === 'username') {
+    return (
+      <div className="game-screen-overlay">
+        <div className="game-screen">
+          <UsernamePrompt 
+            onSubmit={handleScoreSubmit} 
+            onSkip={handleSkipSubmit}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Leaderboard view
+  if (view === 'leaderboard') {
+    return (
+      <Leaderboard 
+        onClose={() => setView('results')}
+        highlightScore={hasSubmitted ? score : undefined}
+        highlightRank={hasSubmitted ? rank : undefined}
+      />
+    )
+  }
+
+  // Results view
   return (
     <div className="game-screen-overlay">
       <div className="game-screen">
         <div className="game-screen__icon">⏱️</div>
         <h1 className="game-screen__title">Time's Up!</h1>
+
+        {challengeTarget !== null && (
+          <div className={`game-screen__challenge-result ${challengeWon ? 'game-screen__challenge-result--won' : 'game-screen__challenge-result--lost'}`}>
+            <span>{challengeWon ? '🎉' : '😢'}</span>
+            <span>{challengeWon ? 'Challenge Complete!' : 'Challenge Failed'}</span>
+          </div>
+        )}
 
         {isNewHighScore && (
           <div className="game-screen__new-record">
@@ -90,12 +220,34 @@ export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: Game
             <span className="game-screen__stat-value">{combo}</span>
             <span className="game-screen__stat-label">Best Combo</span>
           </div>
+          {rank > 0 && (
+            <div className="game-screen__stat">
+              <span className="game-screen__stat-value">#{rank}</span>
+              <span className="game-screen__stat-label">Global Rank</span>
+            </div>
+          )}
         </div>
 
         <div className="game-screen__actions">
           <button className="game-btn" onClick={onRestart}>
             Play Again
           </button>
+          {score > 0 && (
+            <button 
+              className="game-btn game-btn--share" 
+              onClick={handleShareChallenge}
+            >
+              {shareStatus === 'copied' ? '✓ Link Copied!' : '🔗 Challenge Friend'}
+            </button>
+          )}
+          {isFirebaseEnabled() && (
+            <button 
+              className="game-btn game-btn--secondary" 
+              onClick={() => setView('leaderboard')}
+            >
+              View Leaderboard
+            </button>
+          )}
           <button className="game-btn game-btn--secondary" onClick={onChangeMode}>
             Change Mode
           </button>

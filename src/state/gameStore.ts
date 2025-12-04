@@ -33,6 +33,7 @@ const initialState: GameState = {
   roundDuration: DEFAULT_ROUND_DURATION,
   highScore: loadHighScore(),
   isPlaying: false,
+  challengeTarget: null,
 }
 
 interface GameStore extends GameState {
@@ -42,6 +43,7 @@ interface GameStore extends GameState {
   registerSlice: (event: SliceEvent) => void
   registerGesture: (event: GestureEvent) => void
   resetCombo: () => void
+  setChallengeTarget: (target: number | null) => void
   startRound: () => void
   endRound: () => void
   tickTimer: () => void
@@ -67,6 +69,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   registerGesture: (event) => set({ lastGesture: event }),
   
   resetCombo: () => set({ combo: 0 }),
+  
+  setChallengeTarget: (target) => set({ challengeTarget: target }),
   
   startRound: () => set({
     phase: 'running',

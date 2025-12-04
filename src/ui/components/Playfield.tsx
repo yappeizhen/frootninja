@@ -4,6 +4,7 @@ import { useGameStore } from '@/state/gameStore'
 import { usePlayerStore } from '@/state/playerStore'
 import { FruitLayer } from '@/ui/components/FruitCanvas'
 import { StartScreen, GameOverScreen, VersusGameOverScreen } from '@/ui/components/GameScreens'
+import { ChallengeBanner } from '@/ui/components/ChallengeBanner'
 
 const STATUS_COPY: Record<string, string> = {
   idle: 'Waiting for camera...',
@@ -16,13 +17,29 @@ const STATUS_COPY: Record<string, string> = {
 export const Playfield = () => {
   const { frame, status, error, videoRef, restart, maxHands } = useHandData()
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
-  const { phase, isPlaying, score, highScore, gameMode, startRound, tickTimer, reset } = useGameStore()
+  const { phase, isPlaying, score, highScore, gameMode, challengeTarget, setChallengeTarget, startRound, tickTimer, reset } = useGameStore()
   const { resetPlayers } = usePlayerStore()
   const timerRef = useRef<number | null>(null)
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
   const fpsLabel = frame ? frame.fps.toFixed(0) : '0'
+
+  // Detect challenge parameter from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const challengeParam = params.get('challenge')
+    
+    if (challengeParam) {
+      const target = parseInt(challengeParam, 10)
+      if (!isNaN(target) && target > 0 && target <= 10000) {
+        setChallengeTarget(target)
+        // Clean up URL without reloading
+        const newUrl = window.location.pathname
+        window.history.replaceState({}, '', newUrl)
+      }
+    }
+  }, [setChallengeTarget])
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
@@ -116,6 +133,11 @@ export const Playfield = () => {
           playsInline
         />
         <FruitLayer />
+        
+        {/* Challenge banner during gameplay */}
+        {phase === 'running' && challengeTarget !== null && (
+          <ChallengeBanner />
+        )}
         
         {/* Back to Menu button during gameplay */}
         {phase === 'running' && (

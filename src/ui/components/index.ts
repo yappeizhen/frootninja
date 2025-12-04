@@ -4,4 +4,7 @@ export * from './GestureTrailCanvas'
 export * from './GameHUD'
 export * from './GameScreens'
 export * from './PlayerScores'
+export * from './Leaderboard'
+export * from './UsernamePrompt'
+export * from './ChallengeBanner'
 

@@ -53,5 +53,7 @@ export interface GameState {
   roundDuration: number
   highScore: number
   isPlaying: boolean
+  // Challenge mode
+  challengeTarget: number | null
 }
 

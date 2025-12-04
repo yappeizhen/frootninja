@@ -1,0 +1,121 @@
+import { useEffect, useState, useCallback } from 'react'
+import { getTopScores, type LeaderboardEntry } from '@/services/leaderboardService'
+import { isFirebaseEnabled } from '@/services/firebase'
+
+interface LeaderboardProps {
+  onClose: () => void
+  highlightScore?: number
+  highlightRank?: number
+}
+
+export const Leaderboard = ({ onClose, highlightScore, highlightRank }: LeaderboardProps) => {
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchScores = useCallback(async () => {
+    if (!isFirebaseEnabled()) {
+      setError('Leaderboard not configured')
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+      const scores = await getTopScores(50)
+      setEntries(scores)
+    } catch (err) {
+      setError('Failed to load leaderboard')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchScores()
+  }, [fetchScores])
+
+  return (
+    <div className="leaderboard-overlay" onClick={onClose}>
+      <div className="leaderboard" onClick={(e) => e.stopPropagation()}>
+        <header className="leaderboard__header">
+          <h2 className="leaderboard__title">🏆 Leaderboard</h2>
+          <button className="leaderboard__close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </header>
+
+        <div className="leaderboard__content">
+          {loading && (
+            <div className="leaderboard__loading">
+              <span className="leaderboard__spinner">🍉</span>
+              <span>Loading scores...</span>
+            </div>
+          )}
+
+          {error && !isFirebaseEnabled() && (
+            <div className="leaderboard__setup">
+              <span className="leaderboard__setup-icon">🔧</span>
+              <h3 className="leaderboard__setup-title">Setup Required</h3>
+              <p className="leaderboard__setup-text">
+                To enable the global leaderboard, you need to configure Firebase.
+              </p>
+              <ol className="leaderboard__setup-steps">
+                <li>Create a project at <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer">Firebase Console</a></li>
+                <li>Enable Firestore Database</li>
+                <li>Add your Firebase config to <code>.env.local</code></li>
+              </ol>
+            </div>
+          )}
+
+          {error && isFirebaseEnabled() && (
+            <div className="leaderboard__error">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {!loading && !error && entries.length === 0 && (
+            <div className="leaderboard__empty">
+              <span>🎮</span>
+              <span>No scores yet. Be the first!</span>
+            </div>
+          )}
+
+          {!loading && !error && entries.length > 0 && (
+            <div className="leaderboard__list">
+              {entries.map((entry, index) => {
+                const rank = index + 1
+                const isHighlighted = highlightScore !== undefined && 
+                  highlightRank !== undefined && 
+                  rank === highlightRank
+
+                return (
+                  <div 
+                    key={entry.id} 
+                    className={`leaderboard__entry ${isHighlighted ? 'leaderboard__entry--highlighted' : ''}`}
+                  >
+                    <span className={`leaderboard__rank ${rank <= 3 ? `leaderboard__rank--${rank}` : ''}`}>
+                      {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
+                    </span>
+                    <span className="leaderboard__username">{entry.username}</span>
+                    <span className="leaderboard__score">{entry.score.toLocaleString()}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <footer className="leaderboard__footer">
+          <button className="game-btn game-btn--secondary" onClick={onClose}>
+            Close
+          </button>
+        </footer>
+      </div>
+    </div>
+  )
+}
+
