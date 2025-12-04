@@ -27,11 +27,23 @@ interface ScoreDocument {
   gameMode: GameMode
   timestamp: Timestamp
   sessionId: string
+  deviceId: string
 }
 
 const COLLECTION_NAME = 'scores'
 
-// Generate a session ID to prevent duplicate submissions
+// Generate a persistent device ID to identify returning players
+const getDeviceId = (): string => {
+  const key = 'frootninja_device_id'
+  let deviceId = localStorage.getItem(key)
+  if (!deviceId) {
+    deviceId = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}-${Math.random().toString(36).slice(2, 11)}`
+    localStorage.setItem(key, deviceId)
+  }
+  return deviceId
+}
+
+// Generate a session ID to prevent duplicate submissions within a session
 const getSessionId = (): string => {
   const key = 'frootninja_session_id'
   let sessionId = sessionStorage.getItem(key)
@@ -40,6 +52,41 @@ const getSessionId = (): string => {
     sessionStorage.setItem(key, sessionId)
   }
   return sessionId
+}
+
+export type UsernameCheckResult = 'available' | 'taken' | 'owned' | 'error'
+
+export const checkUsername = async (username: string): Promise<UsernameCheckResult> => {
+  if (!isFirebaseEnabled()) {
+    return 'available' // Allow if Firebase not configured
+  }
+
+  const db = getDb()
+  if (!db) return 'error'
+
+  try {
+    const deviceId = getDeviceId()
+    
+    // Check if this username exists in the database
+    const scoresRef = collection(db, COLLECTION_NAME)
+    const q = query(scoresRef, where('username', '==', username.trim()), limit(1))
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return 'available'
+    }
+    
+    // Username exists - check if it belongs to this device
+    const existingDoc = snapshot.docs[0].data() as ScoreDocument
+    if (existingDoc.deviceId === deviceId) {
+      return 'owned' // Same device, can reuse
+    }
+    
+    return 'taken' // Different device owns this username
+  } catch (error) {
+    console.error('Failed to check username:', error)
+    return 'error'
+  }
 }
 
 export const submitScore = async (
@@ -57,12 +104,14 @@ export const submitScore = async (
 
   try {
     const sessionId = getSessionId()
+    const deviceId = getDeviceId()
     await addDoc(collection(db, COLLECTION_NAME), {
       username: username.trim().slice(0, 20),
       score: Math.max(0, Math.min(score, 10000)),
       gameMode,
       timestamp: serverTimestamp(),
       sessionId,
+      deviceId,
     } satisfies Omit<ScoreDocument, 'timestamp'> & { timestamp: ReturnType<typeof serverTimestamp> })
     return true
   } catch (error) {
@@ -85,14 +134,15 @@ export const getTopScores = async (
   try {
     const scoresRef = collection(db, COLLECTION_NAME)
     
-    // Build query based on whether gameMode filter is needed
+    // Fetch more entries than needed to allow for deduplication
+    const fetchLimit = limitCount * 3
     const q = gameMode
-      ? query(scoresRef, where('gameMode', '==', gameMode), orderBy('score', 'desc'), limit(limitCount))
-      : query(scoresRef, orderBy('score', 'desc'), limit(limitCount))
+      ? query(scoresRef, where('gameMode', '==', gameMode), orderBy('score', 'desc'), limit(fetchLimit))
+      : query(scoresRef, orderBy('score', 'desc'), limit(fetchLimit))
     
     const snapshot = await getDocs(q)
 
-    return snapshot.docs.map((doc) => {
+    const allEntries = snapshot.docs.map((doc) => {
       const data = doc.data() as ScoreDocument
       return {
         id: doc.id,
@@ -102,6 +152,21 @@ export const getTopScores = async (
         timestamp: data.timestamp?.toDate() ?? new Date(),
       }
     })
+
+    // Deduplicate: keep only the highest score per username
+    const bestByUser = new Map<string, LeaderboardEntry>()
+    for (const entry of allEntries) {
+      const key = entry.username.toLowerCase()
+      const existing = bestByUser.get(key)
+      if (!existing || entry.score > existing.score) {
+        bestByUser.set(key, entry)
+      }
+    }
+
+    // Sort by score and return top entries
+    return Array.from(bestByUser.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limitCount)
   } catch (error) {
     console.error('Failed to fetch leaderboard:', error)
     return []
