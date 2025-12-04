@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { GameMode, GamePhase, GameState, GestureEvent, SliceEvent } from '@/types'
-import { getPersonalBest } from '@/services/leaderboardService'
+import { getPersonalBest, submitScore } from '@/services/leaderboardService'
+import { useUserStore } from './userStore'
 
 const HIGH_SCORE_KEY = 'frootninja_highscore'
 const DEFAULT_ROUND_DURATION = 30
@@ -100,6 +101,15 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         }
         if (bestScore !== currentStoreHighScore) {
           set({ highScore: bestScore })
+        }
+      }
+      
+      // If local score is higher than Firebase, submit it to Firebase
+      if (localHighScore > firebaseHighScore && localHighScore > 0) {
+        const username = useUserStore.getState().username
+        if (username) {
+          console.log(`Syncing local high score ${localHighScore} to Firebase...`)
+          await submitScore(username, localHighScore, 'solo')
         }
       }
       
