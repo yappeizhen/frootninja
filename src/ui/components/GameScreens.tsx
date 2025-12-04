@@ -23,7 +23,7 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
     <div className="game-screen-overlay">
       <div className="game-screen">
         <div className="game-screen__icon">🍉</div>
-        <h1 className="game-screen__title">Fruit Ninja</h1>
+        <h1 className="game-screen__title">Froot Ninja</h1>
         <p className="game-screen__subtitle">
           Slice fruits with your hands!<br />
           30 seconds to score as high as you can.
