@@ -61,7 +61,7 @@ export const GameHUD = ({ bombHit = false, pointsDocked = false }: GameHUDProps)
 
       {/* Lives */}
       <div className={`hud-lives ${bombHit ? 'hud-lives--hit' : ''}`}>
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <span
             key={i}
             className={`hud-lives__heart ${i < lives ? 'hud-lives__heart--active' : ''} ${bombHit && i === lives ? 'hud-lives__heart--lost' : ''}`}
