@@ -59,10 +59,11 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
         )}
 
         <button 
-          className="game-screen__link"
+          className="game-screen__rankings-btn"
           onClick={() => setShowLeaderboard(true)}
         >
-          🏆 Global Rankings
+          <span>🏆</span>
+          <span>Rankings</span>
         </button>
 
         {gameMode === 'versus' && (

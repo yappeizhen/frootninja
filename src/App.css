@@ -1412,26 +1412,34 @@ h1, h2, h3 {
   letter-spacing: 0.03em;
 }
 
-/* Subtle link-style button */
-.game-screen__link {
+/* Rankings button - compact pill style */
+.game-screen__rankings-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  margin-top: 1rem;
-  padding: 0.5rem 0.75rem;
-  background: none;
-  border: none;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 8px;
+  border-radius: 20px;
 }
 
-.game-screen__link:hover {
-  color: var(--pastel-lavender);
-  background: rgba(196, 168, 255, 0.1);
+.game-screen__rankings-btn span:first-child {
+  font-size: 0.85rem;
+}
+
+.game-screen__rankings-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(196, 168, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Game screen actions fix */
