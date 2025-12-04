@@ -1095,13 +1095,7 @@ h1, h2, h3 {
 
 .hud-lives__heart {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.15);
-  transition: all 0.3s ease;
-}
-
-.hud-lives__heart--active {
-  color: var(--pastel-rose);
-  text-shadow: 0 0 10px var(--pastel-rose-soft);
+  transition: transform 0.3s ease;
 }
 
 /* Lives hit animation */
@@ -1120,20 +1114,9 @@ h1, h2, h3 {
 }
 
 @keyframes heartLost {
-  0% { 
-    transform: scale(1.5); 
-    color: #ff0000;
-    text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
-  }
-  50% {
-    transform: scale(0.8);
-    color: #ff4444;
-  }
-  100% { 
-    transform: scale(1); 
-    color: rgba(255, 255, 255, 0.15);
-    text-shadow: none;
-  }
+  0% { transform: scale(1.5); }
+  50% { transform: scale(0.8); }
+  100% { transform: scale(1); }
 }
 
 /* Bomb Flash Overlay */
