@@ -93,7 +93,8 @@ const getInitialView = (username: string, score: number): GameOverView => {
 }
 
 export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: GameOverScreenProps) => {
-  const { score, highScore, combo, gameMode, challengeTarget } = useGameStore()
+  const { score, highScore, combo, gameMode, challengeTarget, lives } = useGameStore()
+  const diedFromBombs = lives <= 0
   const { username, setUsername } = useUserStore()
   const [view, setView] = useState<GameOverView>(() => getInitialView(username, score))
   const [rank, setRank] = useState<number>(0)
@@ -193,8 +194,8 @@ export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: Game
   return (
     <div className="game-screen-overlay">
       <div className="game-screen">
-        <div className="game-screen__icon">⏱️</div>
-        <h1 className="game-screen__title">Time's Up!</h1>
+        <div className="game-screen__icon">{diedFromBombs ? '💥' : '⏱️'}</div>
+        <h1 className="game-screen__title">{diedFromBombs ? 'Game Over!' : "Time's Up!"}</h1>
 
         {challengeTarget !== null && (
           <div className={`game-screen__challenge-result ${challengeWon ? 'game-screen__challenge-result--won' : 'game-screen__challenge-result--lost'}`}>
