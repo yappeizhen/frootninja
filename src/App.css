@@ -678,6 +678,8 @@ h1, h2, h3 {
   position: relative;
   width: 80px;
   height: 80px;
+  overflow: hidden;
+  border-radius: 50%;
 }
 
 .direction-indicator__ring {
@@ -702,13 +704,14 @@ h1, h2, h3 {
   background: var(--pastel-lavender);
   border-radius: 50%;
   box-shadow: 0 0 10px var(--pastel-lavender);
+  z-index: 2;
 }
 
 .direction-indicator__arrow {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 50%;
+  width: 35%;
   height: 3px;
   background: linear-gradient(90deg, var(--pastel-lavender), var(--pastel-rose));
   border-radius: 2px;
@@ -725,9 +728,9 @@ h1, h2, h3 {
   transform: translateY(-50%);
   width: 0;
   height: 0;
-  border-left: 8px solid var(--pastel-rose);
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--pastel-rose);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
 }
 
 /* Timestamp Badge */

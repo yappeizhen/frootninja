@@ -48,7 +48,7 @@ const ProgressBar = ({
 
 const DirectionIndicator = ({ x, y }: { x: number; y: number }) => {
   const angle = Math.atan2(y, x) * (180 / Math.PI)
-  const magnitude = Math.min(Math.hypot(x, y) * 50, 40)
+  const magnitude = Math.min(Math.hypot(x, y) * 30, 25)
   
   return (
     <div className="direction-indicator">
