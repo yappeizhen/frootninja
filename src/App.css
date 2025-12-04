@@ -2169,6 +2169,24 @@ h1, h2, h3 {
     gap: 0.5rem;
   }
   
+  .game-screen__secondary-actions {
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  
+  .icon-btn {
+    padding: 0.5rem 0.6rem;
+    min-width: 50px;
+  }
+  
+  .icon-btn__icon {
+    font-size: 1.1rem;
+  }
+  
+  .icon-btn__label {
+    font-size: 0.5rem;
+  }
+  
   .game-screen__new-record {
     padding: 0.4rem 0.75rem;
     margin-bottom: 1rem;
@@ -2422,6 +2440,24 @@ h1, h2, h3 {
   
   .game-screen__actions {
     gap: 0.35rem;
+  }
+  
+  .game-screen__secondary-actions {
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+  }
+  
+  .icon-btn {
+    padding: 0.4rem 0.5rem;
+    min-width: 45px;
+  }
+  
+  .icon-btn__icon {
+    font-size: 1rem;
+  }
+  
+  .icon-btn__label {
+    font-size: 0.45rem;
   }
   
   .game-screen__highscore {
