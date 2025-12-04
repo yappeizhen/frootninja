@@ -70,6 +70,8 @@ export interface SliceResult {
   isBomb: boolean
 }
 
+export type FruitMissedCallback = (fruitId: string) => void
+
 export class FruitGame {
   private scene = new THREE.Scene()
   private camera: THREE.PerspectiveCamera
@@ -83,6 +85,7 @@ export class FruitGame {
   private projectionHelper = new THREE.Vector3()
   private envMap: THREE.Texture | null = null
   private spawningEnabled = true
+  private onFruitMissed: FruitMissedCallback | null = null
 
   // Shared Geometries - higher poly for smoother look
   private sphereGeo = new THREE.SphereGeometry(1, 64, 64)
@@ -425,6 +428,10 @@ export class FruitGame {
     this.spawningEnabled = enabled
   }
 
+  setOnFruitMissed(callback: FruitMissedCallback | null) {
+    this.onFruitMissed = callback
+  }
+
   clearFruits() {
     this.fruits.forEach((fruit) => {
       this.scene.remove(fruit.mesh)
@@ -485,6 +492,10 @@ export class FruitGame {
 
       const alive = fruit.mesh.position.y > -2.5
       if (!alive) {
+        // Notify that a fruit was missed (not bombs)
+        if (!fruit.isBomb && this.onFruitMissed) {
+          this.onFruitMissed(fruit.id)
+        }
         this.scene.remove(fruit.mesh)
         ;(fruit.mesh.material as THREE.Material).dispose()
       }

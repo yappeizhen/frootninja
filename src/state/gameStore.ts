@@ -41,6 +41,7 @@ interface GameStore extends GameState {
   setLives: (lives: number) => void
   registerSlice: (event: SliceEvent) => void
   registerGesture: (event: GestureEvent) => void
+  resetCombo: () => void
   startRound: () => void
   endRound: () => void
   tickTimer: () => void
@@ -64,6 +65,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     })),
   
   registerGesture: (event) => set({ lastGesture: event }),
+  
+  resetCombo: () => set({ combo: 0 }),
   
   startRound: () => set({
     phase: 'running',

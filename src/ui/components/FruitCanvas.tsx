@@ -12,7 +12,7 @@ export const FruitLayer = () => {
   const gameRef = useRef<FruitGame | undefined>(undefined)
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   const { lastGesture } = useGestureDetection()
-  const { isPlaying, gameMode, lives, registerSlice, setLives, endRound } = useGameStore()
+  const { isPlaying, gameMode, lives, registerSlice, setLives, endRound, resetCombo } = useGameStore()
   const { registerPlayerSlice } = usePlayerStore()
   const [bombHit, setBombHit] = useState(false)
 
@@ -50,14 +50,31 @@ export const FruitLayer = () => {
     }
   }, [isPlaying])
 
+  // Set up missed fruit callback to reset combo
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) return
+    
+    game.setOnFruitMissed(() => {
+      if (isPlaying) {
+        resetCombo()
+      }
+    })
+    
+    return () => {
+      game.setOnFruitMissed(null)
+    }
+  }, [isPlaying, resetCombo])
+
   const handleGesture = useCallback(() => {
     if (!lastGesture || !isPlaying) return
     const result = gameRef.current?.handleGesture(lastGesture)
     if (result) {
       if (result.isBomb) {
-        // Hit a bomb - lose a life!
+        // Hit a bomb - lose a life and reset combo!
         const newLives = lives - 1
         setLives(newLives)
+        resetCombo()
         
         // Trigger bomb hit visual feedback
         setBombHit(true)
@@ -82,7 +99,7 @@ export const FruitLayer = () => {
         }
       }
     }
-  }, [lastGesture, isPlaying, gameMode, lives, registerSlice, registerPlayerSlice, setLives, endRound])
+  }, [lastGesture, isPlaying, gameMode, lives, registerSlice, registerPlayerSlice, setLives, endRound, resetCombo])
 
   useEffect(() => {
     handleGesture()
