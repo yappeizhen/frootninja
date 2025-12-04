@@ -425,6 +425,60 @@ h1, h2, h3 {
   -webkit-text-fill-color: transparent;
 }
 
+/* Leaderboard quick access button in sidebar */
+.side-panel__leaderboard-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  background: linear-gradient(135deg, rgba(196, 168, 255, 0.1), rgba(125, 196, 240, 0.1));
+  border: 1px solid rgba(196, 168, 255, 0.2);
+  border-radius: 12px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.side-panel__leaderboard-btn:hover {
+  background: linear-gradient(135deg, rgba(196, 168, 255, 0.2), rgba(125, 196, 240, 0.2));
+  border-color: rgba(196, 168, 255, 0.4);
+  transform: translateX(3px);
+}
+
+.side-panel__leaderboard-icon {
+  font-size: 1.5rem;
+}
+
+.side-panel__leaderboard-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.side-panel__leaderboard-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.side-panel__leaderboard-score {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.side-panel__leaderboard-arrow {
+  font-size: 1rem;
+  color: var(--pastel-lavender);
+  transition: transform 0.2s ease;
+}
+
+.side-panel__leaderboard-btn:hover .side-panel__leaderboard-arrow {
+  transform: translateX(3px);
+}
+
 .gesture-pill {
   padding: 0.5rem 1.25rem;
   border-radius: 2rem;
@@ -1311,6 +1365,56 @@ h1, h2, h3 {
 .game-screen__actions {
   display: flex;
   flex-direction: column;
+  width: 100%;
+}
+
+.game-screen__secondary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  transform: translateY(-2px);
+}
+
+.icon-btn:active {
+  transform: translateY(0);
+}
+
+.icon-btn__icon {
+  font-size: 1.25rem;
+}
+
+.icon-btn__label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Game screen actions fix */
+.game-screen__actions .game-btn {
+  width: 100%;
   gap: 0.75rem;
   width: 100%;
   align-items: center;

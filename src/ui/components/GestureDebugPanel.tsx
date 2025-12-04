@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useHandData } from '@/cv'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { useGameStore } from '@/state/gameStore'
+import { Leaderboard } from './Leaderboard'
 
 interface GestureDebugPanelProps {
   isOpen: boolean
@@ -68,10 +69,11 @@ const DirectionIndicator = ({ x, y }: { x: number; y: number }) => {
 export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) => {
   const { frame, maxHands } = useHandData()
   const { lastGesture } = useGestureDetection()
-  const { score, combo } = useGameStore()
+  const { score, combo, highScore } = useGameStore()
   const [totalSlices, setTotalSlices] = useState(0)
   const [maxCombo, setMaxCombo] = useState(0)
   const [peakSpeed, setPeakSpeed] = useState(0)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
   
   const handsDetected = frame?.hands.length ?? 0
 
@@ -101,6 +103,10 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
     }
   }, [lastGesture])
 
+  if (showLeaderboard) {
+    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+  }
+
   return (
     <aside className={`side-panel ${isOpen ? 'side-panel--open' : 'side-panel--closed'}`}>
       <button 
@@ -127,6 +133,21 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
             </div>
           </div>
         </header>
+
+        {/* Leaderboard Quick Access */}
+        <button 
+          className="side-panel__leaderboard-btn"
+          onClick={() => setShowLeaderboard(true)}
+        >
+          <span className="side-panel__leaderboard-icon">🏆</span>
+          <div className="side-panel__leaderboard-info">
+            <span className="side-panel__leaderboard-title">Leaderboard</span>
+            {highScore > 0 && (
+              <span className="side-panel__leaderboard-score">Your best: {highScore.toLocaleString()}</span>
+            )}
+          </div>
+          <span className="side-panel__leaderboard-arrow">→</span>
+        </button>
 
         {/* Session Stats */}
         <div className="stats-grid">

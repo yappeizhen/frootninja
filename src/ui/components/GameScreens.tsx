@@ -13,11 +13,6 @@ interface StartScreenProps {
 
 export const StartScreen = ({ onStart }: StartScreenProps) => {
   const { highScore, gameMode, setGameMode } = useGameStore()
-  const [showLeaderboard, setShowLeaderboard] = useState(false)
-
-  if (showLeaderboard) {
-    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
-  }
 
   return (
     <div className="game-screen-overlay">
@@ -49,13 +44,6 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
 
         <button className="game-btn" onClick={onStart}>
           Start Game
-        </button>
-
-        <button 
-          className="game-btn game-btn--secondary" 
-          onClick={() => setShowLeaderboard(true)}
-        >
-          🏆 Leaderboard
         </button>
 
         {highScore > 0 && gameMode === 'solo' && (
@@ -232,24 +220,35 @@ export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: Game
           <button className="game-btn" onClick={onRestart}>
             Play Again
           </button>
+        </div>
+
+        {/* Secondary actions - compact icon row */}
+        <div className="game-screen__secondary-actions">
           {score > 0 && (
             <button 
-              className="game-btn game-btn--share" 
+              className="icon-btn"
               onClick={handleShareChallenge}
+              title={shareStatus === 'copied' ? 'Copied!' : 'Challenge a friend'}
             >
-              {shareStatus === 'copied' ? '✓ Link Copied!' : '🔗 Challenge Friend'}
+              <span className="icon-btn__icon">{shareStatus === 'copied' ? '✓' : '🔗'}</span>
+              <span className="icon-btn__label">{shareStatus === 'copied' ? 'Copied' : 'Share'}</span>
             </button>
           )}
-          {isFirebaseEnabled() && (
-            <button 
-              className="game-btn game-btn--secondary" 
-              onClick={() => setView('leaderboard')}
-            >
-              View Leaderboard
-            </button>
-          )}
-          <button className="game-btn game-btn--secondary" onClick={onChangeMode}>
-            Change Mode
+          <button 
+            className="icon-btn"
+            onClick={() => setView('leaderboard')}
+            title="View leaderboard"
+          >
+            <span className="icon-btn__icon">🏆</span>
+            <span className="icon-btn__label">Ranks</span>
+          </button>
+          <button 
+            className="icon-btn"
+            onClick={onChangeMode}
+            title="Back to menu"
+          >
+            <span className="icon-btn__icon">🏠</span>
+            <span className="icon-btn__label">Menu</span>
           </button>
         </div>
 
