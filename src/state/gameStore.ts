@@ -3,7 +3,7 @@ import type { GameMode, GamePhase, GameState, GestureEvent, SliceEvent } from '@
 import { getPersonalBest } from '@/services/leaderboardService'
 
 const HIGH_SCORE_KEY = 'frootninja_highscore'
-const DEFAULT_ROUND_DURATION = 60
+const DEFAULT_ROUND_DURATION = 30
 
 const loadHighScore = (): number => {
   try {

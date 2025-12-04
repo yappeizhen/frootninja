@@ -26,7 +26,7 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
         <h1 className="game-screen__title">Fruit Ninja</h1>
         <p className="game-screen__subtitle">
           Slice fruits with your hands!<br />
-          60 seconds to score as high as you can.
+          30 seconds to score as high as you can.
         </p>
 
         {/* Mode Selection */}
