@@ -71,10 +71,19 @@ export const FruitLayer = () => {
     const result = gameRef.current?.handleGesture(lastGesture)
     if (result) {
       if (result.isBomb) {
-        // Hit a bomb - lose a life and reset combo!
+        // Hit a bomb - lose a life, reset combo, and dock points!
         const newLives = lives - 1
         setLives(newLives)
         resetCombo()
+        
+        // Dock 10 points for hitting a bomb
+        if (gameMode === 'solo') {
+          registerSlice({
+            fruitId: result.fruitId,
+            scoreDelta: -10,
+            slicedAt: Date.now(),
+          })
+        }
         
         // Trigger bomb hit visual feedback
         setBombHit(true)
