@@ -66,7 +66,7 @@ export const GameHUD = ({ bombHit = false, pointsDocked = false }: GameHUDProps)
             key={i}
             className={`hud-lives__heart ${i < lives ? 'hud-lives__heart--active' : ''} ${bombHit && i === lives ? 'hud-lives__heart--lost' : ''}`}
           >
-            ♥
+            {i < lives ? '❤️' : '🩶'}
           </span>
         ))}
       </div>
