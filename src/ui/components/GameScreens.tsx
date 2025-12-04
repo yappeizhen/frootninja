@@ -13,6 +13,11 @@ interface StartScreenProps {
 
 export const StartScreen = ({ onStart }: StartScreenProps) => {
   const { highScore, gameMode, setGameMode } = useGameStore()
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+
+  if (showLeaderboard) {
+    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+  }
 
   return (
     <div className="game-screen-overlay">
@@ -52,6 +57,13 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
             <span className="game-screen__highscore-value">{highScore.toLocaleString()}</span>
           </div>
         )}
+
+        <button 
+          className="game-screen__link"
+          onClick={() => setShowLeaderboard(true)}
+        >
+          🏆 Global Rankings
+        </button>
 
         {gameMode === 'versus' && (
           <p className="game-screen__hint">

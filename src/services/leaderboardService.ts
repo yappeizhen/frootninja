@@ -200,3 +200,46 @@ export const getPlayerRank = async (
   }
 }
 
+// Get the current device's personal best score from Firebase
+export const getPersonalBest = async (gameMode?: GameMode): Promise<number> => {
+  if (!isFirebaseEnabled()) {
+    return 0
+  }
+
+  const db = getDb()
+  if (!db) return 0
+
+  try {
+    const deviceId = getDeviceId()
+    const scoresRef = collection(db, COLLECTION_NAME)
+    
+    // Query for this device's scores, ordered by score descending
+    const q = gameMode
+      ? query(
+          scoresRef, 
+          where('deviceId', '==', deviceId),
+          where('gameMode', '==', gameMode),
+          orderBy('score', 'desc'),
+          limit(1)
+        )
+      : query(
+          scoresRef, 
+          where('deviceId', '==', deviceId),
+          orderBy('score', 'desc'),
+          limit(1)
+        )
+    
+    const snapshot = await getDocs(q)
+    
+    if (snapshot.empty) {
+      return 0
+    }
+    
+    const data = snapshot.docs[0].data() as ScoreDocument
+    return data.score
+  } catch (error) {
+    console.error('Failed to get personal best:', error)
+    return 0
+  }
+}
+

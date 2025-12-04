@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { GameMode, GamePhase, GameState, GestureEvent, SliceEvent } from '@/types'
+import { getPersonalBest } from '@/services/leaderboardService'
 
 const HIGH_SCORE_KEY = 'frootninja_highscore'
 const DEFAULT_ROUND_DURATION = 60
@@ -44,6 +45,8 @@ interface GameStore extends GameState {
   registerGesture: (event: GestureEvent) => void
   resetCombo: () => void
   setChallengeTarget: (target: number | null) => void
+  setHighScore: (score: number) => void
+  syncHighScore: () => Promise<void>
   startRound: () => void
   endRound: () => void
   tickTimer: () => void
@@ -71,6 +74,32 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   resetCombo: () => set({ combo: 0 }),
   
   setChallengeTarget: (target) => set({ challengeTarget: target }),
+  
+  setHighScore: (score) => {
+    const current = get().highScore
+    if (score > current) {
+      saveHighScore(score)
+      set({ highScore: score })
+    }
+  },
+  
+  syncHighScore: async () => {
+    try {
+      // Fetch personal best from Firebase
+      const firebaseHighScore = await getPersonalBest('solo')
+      const localHighScore = get().highScore
+      
+      // Use the higher of the two
+      const bestScore = Math.max(firebaseHighScore, localHighScore)
+      
+      if (bestScore > localHighScore) {
+        saveHighScore(bestScore)
+        set({ highScore: bestScore })
+      }
+    } catch (error) {
+      console.error('Failed to sync high score:', error)
+    }
+  },
   
   startRound: () => set({
     phase: 'running',

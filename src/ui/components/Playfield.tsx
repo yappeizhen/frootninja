@@ -17,13 +17,18 @@ const STATUS_COPY: Record<string, string> = {
 export const Playfield = () => {
   const { frame, status, error, videoRef, restart, maxHands } = useHandData()
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
-  const { phase, isPlaying, score, highScore, gameMode, challengeTarget, setChallengeTarget, startRound, tickTimer, reset } = useGameStore()
+  const { phase, isPlaying, score, highScore, gameMode, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
   const { resetPlayers } = usePlayerStore()
   const timerRef = useRef<number | null>(null)
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
   const fpsLabel = frame ? frame.fps.toFixed(0) : '0'
+
+  // Sync high score with Firebase on mount
+  useEffect(() => {
+    syncHighScore()
+  }, [syncHighScore])
 
   // Detect challenge parameter from URL on mount
   useEffect(() => {
