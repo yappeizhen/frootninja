@@ -207,7 +207,7 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
             {/* Direction Compass */}
             <div className="direction-section">
               <span className="section-label">Slice Direction</span>
-              <DirectionIndicator x={summary.direction.x} y={summary.direction.y} />
+              <DirectionIndicator x={-summary.direction.x} y={summary.direction.y} />
             </div>
 
           </>
