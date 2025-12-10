@@ -58,9 +58,9 @@ export const App = () => {
       
       {/* Footer */}
       <footer className="app-footer">
-        <span className="app-footer__text">Slice fruits with your hands</span>
+        <span className="app-footer__text">🍎 Slice fruits with your hands ✋</span>
         <span className="app-footer__divider">•</span>
-        <span className="app-footer__text">Powered by MediaPipe</span>
+        <span className="app-footer__text">✨ Powered by MediaPipe</span>
       </footer>
       
       <GestureDebugPanel isOpen={isPanelOpen} onToggle={() => setIsPanelOpen(!isPanelOpen)} />
