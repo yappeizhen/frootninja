@@ -15,7 +15,7 @@ const STATUS_COPY: Record<string, string> = {
 }
 
 export const Playfield = () => {
-  const { frame, status, error, videoRef, restart, maxHands } = useHandData()
+  const { frame, status, error, videoRef, restart } = useHandData()
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const { phase, isPlaying, score, highScore, gameMode, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
   const { resetPlayers } = usePlayerStore()
@@ -23,7 +23,6 @@ export const Playfield = () => {
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
-  const fpsLabel = frame ? frame.fps.toFixed(0) : '0'
 
   // Sync high score with Firebase on mount
   useEffect(() => {
@@ -128,8 +127,7 @@ export const Playfield = () => {
   }, [status, error, handsDetected, phase])
 
   return (
-    <section className="playfield-card">
-      <div className="playfield-stage">
+    <section className="playfield-stage">
         <video
           ref={handleVideoRef}
           className="playfield-video"
@@ -176,23 +174,6 @@ export const Playfield = () => {
             ) : null}
           </div>
         ) : null}
-      </div>
-      <footer className="playfield-footer">
-        <div>
-          <span className="playfield-label">Status</span>
-          <strong>{STATUS_COPY[status] ?? status}</strong>
-        </div>
-        <div>
-          <span className="playfield-label">FPS</span>
-          <strong>{fpsLabel}</strong>
-        </div>
-        <div>
-          <span className="playfield-label">Hands</span>
-          <strong>
-            {handsDetected}/{maxHands}
-          </strong>
-        </div>
-      </footer>
     </section>
   )
 }

@@ -109,19 +109,18 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
 
   return (
     <aside className={`side-panel ${isOpen ? 'side-panel--open' : 'side-panel--closed'}`}>
-      <button 
-        className="side-panel__toggle"
-        onClick={onToggle}
-        aria-label={isOpen ? 'Close panel' : 'Open panel'}
-      >
-        <span className="side-panel__toggle-icon">
-          {isOpen ? '›' : '‹'}
-        </span>
-      </button>
-      
       <div className="side-panel__content">
         <header className="side-panel__header">
-          <p className="eyebrow">Live gestures</p>
+          <div className="side-panel__header-top">
+            <p className="eyebrow">Live gestures</p>
+            <button 
+              className="side-panel__close"
+              onClick={onToggle}
+              aria-label="Close panel"
+            >
+              ✕
+            </button>
+          </div>
           <h2>Slice Analytics</h2>
           <div className="header-pills">
             <div className={`gesture-pill ${lastGesture?.type === 'slice' ? 'gesture-pill--active' : ''}`}>

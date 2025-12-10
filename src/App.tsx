@@ -31,25 +31,40 @@ export const App = () => {
   }, [isMobile])
 
   return (
-    <main className="app-shell">
-      {/* Mobile toggle bar - only visible on mobile */}
-      <header className="mobile-header">
-        <h1 className="mobile-header__title">Frootninja</h1>
+    <div className="app-shell">
+      {/* Header */}
+      <header className="app-header">
+        <h1 className="app-header__title">
+          <span className="app-header__icon">🍉</span>
+          Frootninja
+        </h1>
         <button 
-          className="mobile-header__toggle"
+          className="app-header__menu-btn"
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          aria-label={isPanelOpen ? 'Hide stats' : 'Show stats'}
+          aria-label={isPanelOpen ? 'Close menu' : 'Open menu'}
         >
-          <span className="mobile-header__toggle-icon">{isPanelOpen ? '▲' : '▼'}</span>
-          <span>Stats</span>
+          <span className={`hamburger ${isPanelOpen ? 'hamburger--open' : ''}`}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
         </button>
       </header>
       
-      <div className={`app-main ${!isPanelOpen ? 'app-main--panel-closed' : ''}`}>
+      {/* Main content */}
+      <main className={`app-main ${!isPanelOpen ? 'app-main--panel-closed' : ''}`}>
         <Playfield />
-      </div>
+      </main>
+      
+      {/* Footer */}
+      <footer className="app-footer">
+        <span className="app-footer__text">Slice fruits with your hands</span>
+        <span className="app-footer__divider">•</span>
+        <span className="app-footer__text">Powered by MediaPipe</span>
+      </footer>
+      
       <GestureDebugPanel isOpen={isPanelOpen} onToggle={() => setIsPanelOpen(!isPanelOpen)} />
-    </main>
+    </div>
   )
 }
 
