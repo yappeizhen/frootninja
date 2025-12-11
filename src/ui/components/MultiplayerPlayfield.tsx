@@ -58,6 +58,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [gameEnded, setGameEnded] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const opponentVideoRef = useRef<HTMLVideoElement>(null)
+  const localVideoElementRef = useRef<HTMLVideoElement | null>(null)
 
   // WebRTC for opponent video
   const { remoteStream } = useWebRTC({
@@ -75,10 +76,40 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [remoteStream])
 
+  // Poll for local stream attachment (hand tracker may attach after mount)
+  useEffect(() => {
+    if (localStream) return
+    const el = localVideoElementRef.current
+    if (!el) return
+
+    let attempts = 0
+    const maxAttempts = 20
+    const timer = window.setInterval(() => {
+      if (el.srcObject instanceof MediaStream) {
+        console.log('[MultiplayerPlayfield] Captured local stream for WebRTC')
+        setLocalStream(el.srcObject)
+        clearInterval(timer)
+      } else if (++attempts >= maxAttempts) {
+        console.warn('[MultiplayerPlayfield] Failed to capture local stream after retries')
+        clearInterval(timer)
+      }
+    }, 300)
+
+    // Run immediately once
+    if (el.srcObject instanceof MediaStream) {
+      console.log('[MultiplayerPlayfield] Captured local stream for WebRTC (immediate)')
+      setLocalStream(el.srcObject)
+      clearInterval(timer)
+    }
+
+    return () => clearInterval(timer)
+  }, [localStream])
+
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
       console.log('[MultiplayerPlayfield] Video ref called:', !!node)
       if (node) {
+        localVideoElementRef.current = node
         console.log('[MultiplayerPlayfield] Video element dimensions:', node.clientWidth, 'x', node.clientHeight)
         
         // Add event listeners to debug video state
