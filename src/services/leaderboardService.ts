@@ -1,6 +1,8 @@
 import {
   collection,
-  addDoc,
+  doc,
+  setDoc,
+  getDoc,
   query,
   orderBy,
   limit,
@@ -105,9 +107,29 @@ export const submitScore = async (
   try {
     const sessionId = getSessionId()
     const deviceId = getDeviceId()
-    await addDoc(collection(db, COLLECTION_NAME), {
+    const sanitizedScore = Math.max(0, Math.min(score, 10000))
+    
+    // Use a deterministic document ID based on deviceId and gameMode
+    // This ensures only one highscore per player per game mode
+    const docId = `${deviceId}_${gameMode}`
+    const docRef = doc(db, COLLECTION_NAME, docId)
+    
+    // Check if player already has a score for this game mode
+    const existingDoc = await getDoc(docRef)
+    
+    if (existingDoc.exists()) {
+      const existingData = existingDoc.data() as ScoreDocument
+      // Only update if new score is higher
+      if (sanitizedScore <= existingData.score) {
+        console.log('Score not submitted: not a new highscore')
+        return true // Still return true since this isn't an error
+      }
+    }
+    
+    // Save the new highscore
+    await setDoc(docRef, {
       username: username.trim().slice(0, 20),
-      score: Math.max(0, Math.min(score, 10000)),
+      score: sanitizedScore,
       gameMode,
       timestamp: serverTimestamp(),
       sessionId,
@@ -134,39 +156,23 @@ export const getTopScores = async (
   try {
     const scoresRef = collection(db, COLLECTION_NAME)
     
-    // Fetch more entries than needed to allow for deduplication
-    const fetchLimit = limitCount * 3
+    // Each player only has one entry per game mode, so no deduplication needed
     const q = gameMode
-      ? query(scoresRef, where('gameMode', '==', gameMode), orderBy('score', 'desc'), limit(fetchLimit))
-      : query(scoresRef, orderBy('score', 'desc'), limit(fetchLimit))
+      ? query(scoresRef, where('gameMode', '==', gameMode), orderBy('score', 'desc'), limit(limitCount))
+      : query(scoresRef, orderBy('score', 'desc'), limit(limitCount))
     
     const snapshot = await getDocs(q)
 
-    const allEntries = snapshot.docs.map((doc) => {
-      const data = doc.data() as ScoreDocument
+    return snapshot.docs.map((docSnap) => {
+      const data = docSnap.data() as ScoreDocument
       return {
-        id: doc.id,
+        id: docSnap.id,
         username: data.username,
         score: data.score,
         gameMode: data.gameMode,
         timestamp: data.timestamp?.toDate() ?? new Date(),
       }
     })
-
-    // Deduplicate: keep only the highest score per username
-    const bestByUser = new Map<string, LeaderboardEntry>()
-    for (const entry of allEntries) {
-      const key = entry.username.toLowerCase()
-      const existing = bestByUser.get(key)
-      if (!existing || entry.score > existing.score) {
-        bestByUser.set(key, entry)
-      }
-    }
-
-    // Sort by score and return top entries
-    return Array.from(bestByUser.values())
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limitCount)
   } catch (error) {
     console.error('Failed to fetch leaderboard:', error)
     return []
@@ -211,13 +217,26 @@ export const getPersonalBest = async (gameMode?: GameMode): Promise<number> => {
 
   try {
     const deviceId = getDeviceId()
-    const scoresRef = collection(db, COLLECTION_NAME)
     
-    // Simple query by deviceId only (avoids needing composite index)
+    if (gameMode) {
+      // Direct document lookup when gameMode is specified
+      const docId = `${deviceId}_${gameMode}`
+      const docRef = doc(db, COLLECTION_NAME, docId)
+      const docSnap = await getDoc(docRef)
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data() as ScoreDocument
+        return data.score
+      }
+      return 0
+    }
+    
+    // If no gameMode specified, check all game modes for this device
+    const scoresRef = collection(db, COLLECTION_NAME)
     const q = query(
       scoresRef, 
       where('deviceId', '==', deviceId),
-      limit(50) // Fetch recent scores for this device
+      limit(10)
     )
     
     const snapshot = await getDocs(q)
@@ -226,14 +245,12 @@ export const getPersonalBest = async (gameMode?: GameMode): Promise<number> => {
       return 0
     }
     
-    // Find the highest score for the specified game mode
+    // Find the highest score across all game modes
     let highestScore = 0
-    for (const doc of snapshot.docs) {
-      const data = doc.data() as ScoreDocument
-      if (!gameMode || data.gameMode === gameMode) {
-        if (data.score > highestScore) {
-          highestScore = data.score
-        }
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data() as ScoreDocument
+      if (data.score > highestScore) {
+        highestScore = data.score
       }
     }
     
