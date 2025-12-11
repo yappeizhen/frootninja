@@ -808,7 +808,8 @@ export class FruitGame {
 
   private pickGestureTarget(gesture: GestureEvent): FruitBody | null {
     if (!this.fruits.length) return null
-    const maxDistance = 0.28
+    // Large distance to handle aspect ratio mismatch in split-screen multiplayer
+    const maxDistance = 0.5
     let bestFruit: FruitBody | null = null
     let bestDistance = Infinity
     for (const fruit of this.fruits) {
