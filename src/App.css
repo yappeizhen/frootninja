@@ -3336,8 +3336,8 @@ h1, h2, h3 {
 }
 
 .waiting-room__player--ready {
-  border-color: var(--pastel-mint);
-  background: rgba(109, 220, 176, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .waiting-room__player--waiting {
@@ -3375,6 +3375,7 @@ h1, h2, h3 {
 
 .waiting-room__player--ready .waiting-room__player-status {
   color: var(--pastel-mint);
+  font-weight: 500;
 }
 
 .waiting-room__actions {
