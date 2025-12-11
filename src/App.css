@@ -3564,6 +3564,22 @@ h1, h2, h3 {
   pointer-events: none;
 }
 
+.multiplayer-playfield__connecting {
+  position: absolute;
+  bottom: 4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  z-index: 10;
+}
+
 /* Multiplayer HUD */
 .multiplayer-hud {
   position: absolute;

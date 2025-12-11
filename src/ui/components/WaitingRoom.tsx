@@ -130,7 +130,10 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
           {opponent ? (
             <div className="waiting-room__player waiting-room__player--ready">
               <span className="waiting-room__player-icon">👤</span>
-              <span className="waiting-room__player-name">{opponent.name}</span>
+              <span className="waiting-room__player-name">
+                {opponent.name}
+                {!isHost && <span className="waiting-room__host-badge">Host</span>}
+              </span>
               <span className="waiting-room__player-status">✓ Joined</span>
             </div>
           ) : (
