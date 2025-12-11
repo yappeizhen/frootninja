@@ -202,9 +202,17 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Handle gestures for slicing
   useEffect(() => {
-    if (!isPlaying || !lastGesture || !myGameRef.current) return
+    if (!isPlaying || !lastGesture || !myGameRef.current) {
+      // Debug: log why we're skipping
+      if (lastGesture && isPlaying) {
+        console.log('[MultiplayerPlayfield] Gesture detected but no game ref:', !!myGameRef.current)
+      }
+      return
+    }
 
+    console.log('[MultiplayerPlayfield] Processing gesture:', lastGesture.type, 'at', lastGesture.origin.x.toFixed(2), lastGesture.origin.y.toFixed(2))
     const result = myGameRef.current.handleGesture(lastGesture)
+    console.log('[MultiplayerPlayfield] Gesture result:', result)
     if (result) {
       if (result.isBomb) {
         // Hit a bomb
