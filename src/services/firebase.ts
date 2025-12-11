@@ -1,5 +1,6 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
 import { getFirestore, type Firestore } from 'firebase/firestore'
+import { getDatabase, type Database } from 'firebase/database'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -8,10 +9,12 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 }
 
 let app: FirebaseApp | null = null
 let db: Firestore | null = null
+let rtdb: Database | null = null
 
 const isConfigured = (): boolean => {
   return Boolean(
@@ -41,6 +44,15 @@ export const getDb = (): Firestore | null => {
     db = getFirestore(firebaseApp)
   }
   return db
+}
+
+export const getRtdb = (): Database | null => {
+  if (!rtdb) {
+    const firebaseApp = getFirebaseApp()
+    if (!firebaseApp) return null
+    rtdb = getDatabase(firebaseApp)
+  }
+  return rtdb
 }
 
 export const isFirebaseEnabled = (): boolean => isConfigured()

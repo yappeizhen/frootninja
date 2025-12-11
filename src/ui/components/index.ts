@@ -8,4 +8,6 @@ export * from './Leaderboard'
 export * from './UsernamePrompt'
 export * from './ChallengeBanner'
 export * from './LoadingScreen'
+export * from './MultiplayerMenu'
+export * from './WaitingRoom'
 

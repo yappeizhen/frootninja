@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '@/state/gameStore'
-import { usePlayerStore } from '@/state/playerStore'
 import { useUserStore } from '@/state/userStore'
 import { submitScore, getPlayerRank } from '@/services/leaderboardService'
 import { isFirebaseEnabled } from '@/services/firebase'
 import { UsernamePrompt } from './UsernamePrompt'
 import { Leaderboard } from './Leaderboard'
+import { MultiplayerMenu } from './MultiplayerMenu'
 
 interface StartScreenProps {
   onStart: () => void
@@ -14,9 +14,14 @@ interface StartScreenProps {
 export const StartScreen = ({ onStart }: StartScreenProps) => {
   const { highScore, gameMode, setGameMode } = useGameStore()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showMultiplayerMenu, setShowMultiplayerMenu] = useState(false)
 
   if (showLeaderboard) {
     return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+  }
+
+  if (showMultiplayerMenu) {
+    return <MultiplayerMenu onBack={() => setShowMultiplayerMenu(false)} />
   }
 
   return (
@@ -39,11 +44,14 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
             <span className="game-mode-btn__label">Solo</span>
           </button>
           <button
-            className={`game-mode-btn ${gameMode === 'versus' ? 'game-mode-btn--active' : ''}`}
-            onClick={() => setGameMode('versus')}
+            className={`game-mode-btn ${gameMode === 'multiplayer' ? 'game-mode-btn--active' : ''}`}
+            onClick={() => {
+              setGameMode('multiplayer')
+              setShowMultiplayerMenu(true)
+            }}
           >
             <span className="game-mode-btn__icon">👥</span>
-            <span className="game-mode-btn__label">Versus</span>
+            <span className="game-mode-btn__label">Multiplayer</span>
           </button>
         </div>
 
@@ -65,12 +73,6 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
           <span>🏆</span>
           <span>Rankings</span>
         </button>
-
-        {gameMode === 'versus' && (
-          <p className="game-screen__hint">
-            Left hand = P1 · Right hand = P2
-          </p>
-        )}
       </div>
     </div>
   )
@@ -277,56 +279,5 @@ export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: Game
   )
 }
 
-interface VersusGameOverScreenProps {
-  onRestart: () => void
-  onChangeMode: () => void
-}
-
-export const VersusGameOverScreen = ({ onRestart, onChangeMode }: VersusGameOverScreenProps) => {
-  const { player1, player2, getWinner } = usePlayerStore()
-  const winner = getWinner()
-
-  const winnerTitle = winner === 'tie' 
-    ? "It's a Tie!" 
-    : winner === 'player1' 
-      ? 'Player 1 Wins!' 
-      : 'Player 2 Wins!'
-
-  const winnerClass = winner === 'player1' ? 'p1' : winner === 'player2' ? 'p2' : 'tie'
-
-  return (
-    <div className="game-screen-overlay">
-      <div className="game-screen">
-        <div className="game-screen__icon">👑</div>
-        <h1 className={`game-screen__title game-screen__title--${winnerClass}`}>
-          {winnerTitle}
-        </h1>
-
-        <div className="game-screen__versus-stats">
-          <div className={`versus-stat versus-stat--p1 ${winner === 'player1' ? 'versus-stat--winner' : ''}`}>
-            <span className="versus-stat__label">Player 1</span>
-            <span className="versus-stat__score">{player1.score.toLocaleString()}</span>
-            <span className="versus-stat__combo">Best: x{player1.maxCombo}</span>
-          </div>
-          
-          <div className="versus-stat__vs">VS</div>
-          
-          <div className={`versus-stat versus-stat--p2 ${winner === 'player2' ? 'versus-stat--winner' : ''}`}>
-            <span className="versus-stat__label">Player 2</span>
-            <span className="versus-stat__score">{player2.score.toLocaleString()}</span>
-            <span className="versus-stat__combo">Best: x{player2.maxCombo}</span>
-          </div>
-        </div>
-
-        <div className="game-screen__actions">
-          <button className="game-btn" onClick={onRestart}>
-            Play Again
-          </button>
-          <button className="game-btn game-btn--secondary" onClick={onChangeMode}>
-            Change Mode
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// Note: VersusGameOverScreen removed - replaced by multiplayer mode
+// TODO: Create MultiplayerGameOver.tsx when implementing Phase 4
