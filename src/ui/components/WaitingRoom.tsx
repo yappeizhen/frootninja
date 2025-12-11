@@ -31,16 +31,8 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
     setReady(true)
   }, [setReady])
 
-  // Auto-start when both players are in the room (host only)
-  useEffect(() => {
-    if (isHost && opponent && localPlayer) {
-      // Both players are here, start the game after a short delay
-      const timer = setTimeout(() => {
-        startGame()
-      }, 1500) // 1.5 second delay to let players see each other
-      return () => clearTimeout(timer)
-    }
-  }, [isHost, opponent, localPlayer, startGame])
+  // Check if both players are present
+  const canStart = isHost && opponent && localPlayer
 
   // Handle countdown when game is about to start
   useEffect(() => {
@@ -58,6 +50,12 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
       return () => clearInterval(interval)
     }
   }, [roomState])
+
+  const handleStartGame = useCallback(async () => {
+    if (canStart) {
+      await startGame()
+    }
+  }, [canStart, startGame])
 
   const handleLeave = useCallback(async () => {
     await leaveRoom()
@@ -140,11 +138,26 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
         </div>
 
         {/* Status message */}
-        {opponent ? (
-          <p className="waiting-room__status">Starting game...</p>
-        ) : (
+        {!opponent && (
           <p className="waiting-room__status">Share the room code with a friend to play!</p>
         )}
+
+        {/* Actions */}
+        <div className="waiting-room__actions">
+          {isHost && (
+            <button 
+              className="game-btn game-btn--primary"
+              onClick={handleStartGame}
+              disabled={!canStart}
+            >
+              {canStart ? 'Start Game' : 'Waiting for opponent...'}
+            </button>
+          )}
+          
+          {!isHost && opponent && (
+            <p className="waiting-room__status">Waiting for host to start...</p>
+          )}
+        </div>
 
         <button 
           className="game-btn game-btn--secondary waiting-room__leave-btn" 

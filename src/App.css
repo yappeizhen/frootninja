@@ -3277,8 +3277,8 @@ h1, h2, h3 {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid var(--pastel-mint);
+  background: rgba(200, 162, 200, 0.1);
+  border: 2px solid var(--pastel-lavender);
   border-radius: 1rem;
 }
 
@@ -3286,7 +3286,7 @@ h1, h2, h3 {
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: 0.4rem;
-  color: var(--pastel-mint);
+  color: var(--pastel-lavender);
   font-family: 'Space Grotesk', monospace;
 }
 
@@ -3298,11 +3298,16 @@ h1, h2, h3 {
   cursor: pointer;
   font-size: 1.25rem;
   transition: all 0.2s ease;
+  outline: none;
 }
 
 .waiting-room__copy-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
+}
+
+.waiting-room__copy-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--pastel-lavender);
 }
 
 .waiting-room__code-hint {
@@ -3394,8 +3399,14 @@ h1, h2, h3 {
   50% { opacity: 1; }
 }
 
+.waiting-room__actions .game-btn {
+  width: 100%;
+}
+
 .waiting-room__leave-btn {
   margin-top: 0.5rem;
+  width: 100%;
+  max-width: 280px;
 }
 
 .game-btn--ready {
@@ -3404,7 +3415,12 @@ h1, h2, h3 {
 }
 
 .game-btn--primary {
-  background: linear-gradient(135deg, var(--pastel-mint), var(--pastel-sky));
+  background: linear-gradient(135deg, var(--pastel-rose), var(--pastel-lavender));
+}
+
+.game-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--pastel-lavender), var(--pastel-rose));
+  transform: translateY(-2px);
 }
 
 .game-btn--primary:disabled {
