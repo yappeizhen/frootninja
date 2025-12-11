@@ -53,7 +53,11 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
 
   const handleStartGame = useCallback(async () => {
     if (canStart) {
-      await startGame()
+      console.log('Starting game...')
+      const success = await startGame()
+      if (!success) {
+        console.error('Failed to start game')
+      }
     }
   }, [canStart, startGame])
 

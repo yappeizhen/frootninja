@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
-import { useMultiplayerRoom, SeededRNG } from '@/multiplayer'
+import { useMultiplayerRoom, SeededRNG, updateRoomState } from '@/multiplayer'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { GestureTrailCanvas } from './GestureTrailCanvas'
@@ -30,6 +30,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     opponent,
     localPlayer,
     winner,
+    isHost,
     syncScore,
     reportSlice,
     endGame,
@@ -74,9 +75,21 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           return prev - 1
         })
       }, 1000)
+
+      // Host transitions to playing after countdown (3 seconds)
+      if (isHost && roomId) {
+        const transitionTimer = setTimeout(() => {
+          updateRoomState(roomId, 'playing')
+        }, 3000)
+        return () => {
+          clearInterval(interval)
+          clearTimeout(transitionTimer)
+        }
+      }
+
       return () => clearInterval(interval)
     }
-  }, [roomState])
+  }, [roomState, isHost, roomId])
 
   // Start game when countdown ends
   useEffect(() => {
@@ -87,26 +100,33 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       setMyCombo(0)
       setMyMaxCombo(0)
 
-      // Initialize my game with seeded RNG
-      if (myCanvasRef.current && !myGameRef.current) {
-        const game = new FruitGame(myCanvasRef.current)
-        const rng = new SeededRNG(seed)
-        game.setSeededRNG(rng)
-        game.setOnFruitSpawn(() => {
-          // Could sync spawn data if needed for opponent view
-        })
-        game.start()
-        myGameRef.current = game
-      }
+      // Small delay to ensure canvas is properly rendered in DOM
+      requestAnimationFrame(() => {
+        // Initialize my game with seeded RNG
+        if (myCanvasRef.current && !myGameRef.current) {
+          const game = new FruitGame(myCanvasRef.current)
+          const rng = new SeededRNG(seed)
+          game.setSeededRNG(rng)
+          game.setOnFruitSpawn(() => {
+            // Could sync spawn data if needed for opponent view
+          })
+          game.start()
+          myGameRef.current = game
+          // Ensure proper sizing
+          game.syncViewport()
+        }
 
-      // Initialize opponent's view with same seed
-      if (opponentCanvasRef.current && !opponentGameRef.current) {
-        const game = new FruitGame(opponentCanvasRef.current)
-        const rng = new SeededRNG(seed) // Same seed = same spawns
-        game.setSeededRNG(rng)
-        game.start()
-        opponentGameRef.current = game
-      }
+        // Initialize opponent's view with same seed
+        if (opponentCanvasRef.current && !opponentGameRef.current) {
+          const game = new FruitGame(opponentCanvasRef.current)
+          const rng = new SeededRNG(seed) // Same seed = same spawns
+          game.setSeededRNG(rng)
+          game.start()
+          opponentGameRef.current = game
+          // Ensure proper sizing
+          game.syncViewport()
+        }
+      })
 
       // Start game timer
       timerRef.current = window.setInterval(() => {
@@ -120,12 +140,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         })
       }, 1000)
 
-      // Start score sync interval
-      syncIntervalRef.current = window.setInterval(() => {
-        if (roomId) {
-          syncScore(myScore, myCombo, myMaxCombo)
-        }
-      }, 500)
+      // Score sync is now handled by the useEffect below that watches score changes
+      // This avoids stale closure issues
     }
 
     return () => {
@@ -178,6 +194,23 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       syncScore(myScore, myCombo, myMaxCombo)
     }
   }, [myScore, myCombo, myMaxCombo, isPlaying, roomId, syncScore])
+
+  // Track last processed opponent slice to avoid duplicates
+  const lastOpponentSliceRef = useRef<string | null>(null)
+
+  // Watch for opponent slice events and show effects on their game view
+  useEffect(() => {
+    if (!isPlaying || !opponent?.lastSlice || !opponentGameRef.current) return
+    
+    const slice = opponent.lastSlice
+    // Skip if we've already processed this slice
+    if (lastOpponentSliceRef.current === slice.id) return
+    lastOpponentSliceRef.current = slice.id
+
+    // Trigger slice effect on opponent's game
+    // The opponent's game has the same fruit spawns, so we can simulate the slice
+    opponentGameRef.current.triggerSliceEffectAtPosition?.(slice.position.x, slice.position.y)
+  }, [isPlaying, opponent?.lastSlice])
 
   const handleGameEnd = useCallback(async () => {
     setIsPlaying(false)

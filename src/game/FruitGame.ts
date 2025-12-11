@@ -483,6 +483,50 @@ export class FruitGame {
     this.handleResize()
   }
 
+  /**
+   * Trigger a slice effect at a given screen position (for opponent visualization)
+   * This finds the nearest fruit to the position and slices it
+   */
+  triggerSliceEffectAtPosition(x: number, y: number) {
+    if (!this.fruits.length) return
+
+    // Find nearest fruit to this screen position
+    let nearestFruit: FruitBody | null = null
+    let nearestDistance = Infinity
+
+    for (const fruit of this.fruits) {
+      const screen = this.projectToScreen(fruit)
+      const dx = screen.x - x
+      const dy = screen.y - y
+      const distance = Math.hypot(dx, dy)
+      if (distance < nearestDistance) {
+        nearestFruit = fruit
+        nearestDistance = distance
+      }
+    }
+
+    // If we found a fruit within reasonable range, slice it
+    if (nearestFruit && nearestDistance < 0.4) {
+      // Create a synthetic gesture for the slice direction
+      const fakeGesture: GestureEvent = {
+        id: `opponent_${Date.now()}`,
+        type: 'slice',
+        origin: { x, y, z: 0.5 },
+        direction: { x: 0.5, y: 0.5 }, // Diagonal slice
+        speed: 1,
+        strength: 1,
+        hand: 'Right',
+        timestamp: Date.now(),
+      }
+      
+      if (nearestFruit.isBomb) {
+        this.explodeBomb(nearestFruit)
+      } else {
+        this.sliceFruit(nearestFruit, fakeGesture)
+      }
+    }
+  }
+
   private tick = () => {
     const now = performance.now()
     const delta = Math.min((now - this.lastTime) / 1000, 0.1)

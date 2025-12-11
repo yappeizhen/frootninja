@@ -15,6 +15,7 @@ export interface RoomPlayer {
   maxCombo: number
   connected: boolean
   lastActivity: number
+  lastSlice?: SliceEventMP
 }
 
 export interface SliceEventMP {

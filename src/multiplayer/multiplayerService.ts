@@ -297,10 +297,9 @@ export async function startGame(roomId: string): Promise<boolean> {
     // Only host can start
     if (roomData.hostId !== playerId) return false
 
-    // Check all players are ready
+    // Check we have 2 players (players are implicitly ready when they join)
     const players = Object.values(roomData.players || {})
     if (players.length < 2) return false
-    if (!players.every((p) => p.ready)) return false
 
     // Start countdown
     await updateDoc(roomRef, {

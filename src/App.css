@@ -1445,6 +1445,7 @@ h1, h2, h3 {
 .game-screen__actions {
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
   width: 100%;
 }
 
@@ -3185,7 +3186,7 @@ h1, h2, h3 {
 
 .multiplayer-menu__option:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
-  border-color: var(--pastel-mint);
+  border-color: var(--pastel-lavender);
   transform: translateY(-2px);
 }
 
@@ -3278,7 +3279,7 @@ h1, h2, h3 {
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
   background: rgba(200, 162, 200, 0.1);
-  border: 2px solid var(--pastel-lavender);
+  border: 2px solid var(--pastel-mint);
   border-radius: 1rem;
 }
 
@@ -3286,7 +3287,7 @@ h1, h2, h3 {
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: 0.4rem;
-  color: var(--pastel-lavender);
+  color: var(--pastel-mint);
   font-family: 'Space Grotesk', monospace;
 }
 
@@ -3307,7 +3308,7 @@ h1, h2, h3 {
 }
 
 .waiting-room__copy-btn:focus-visible {
-  box-shadow: 0 0 0 2px var(--pastel-lavender);
+  box-shadow: 0 0 0 2px var(--pastel-mint);
 }
 
 .waiting-room__code-hint {
@@ -3384,7 +3385,7 @@ h1, h2, h3 {
   gap: 0.75rem;
   width: 100%;
   max-width: 280px;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .waiting-room__status {
