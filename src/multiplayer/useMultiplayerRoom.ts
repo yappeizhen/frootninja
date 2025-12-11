@@ -15,6 +15,7 @@ import {
   syncPlayerScore,
   reportSlice,
   endGame,
+  resetRoomForRematch,
   subscribeToRoom,
   getPlayerId,
   cleanupStaleRooms,
@@ -156,6 +157,12 @@ export function useMultiplayerRoom() {
     }
   }, [store.roomId])
 
+  const handleRematch = useCallback(async (): Promise<boolean> => {
+    if (!store.roomId) return false
+    console.log('[handleRematch] Resetting room for rematch...')
+    return await resetRoomForRematch(store.roomId)
+  }, [store.roomId])
+
   // Get local player from room
   const getLocalPlayer = useCallback((): RoomPlayer | null => {
     if (!store.room) return null
@@ -213,6 +220,7 @@ export function useMultiplayerRoom() {
     syncScore: handleSyncScore,
     reportSlice: handleReportSlice,
     endGame: handleEndGame,
+    rematch: handleRematch,
   }
 }
 

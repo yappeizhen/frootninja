@@ -421,6 +421,55 @@ export async function reportSlice(
 }
 
 /**
+ * Reset room for rematch
+ */
+export async function resetRoomForRematch(roomId: string): Promise<boolean> {
+  if (!isFirebaseEnabled()) return false
+
+  const db = getDb()
+  if (!db) return false
+
+  try {
+    const roomRef = doc(db, 'rooms', roomId)
+    const snapshot = await getDoc(roomRef)
+
+    if (!snapshot.exists()) return false
+
+    const roomData = snapshot.data() as RoomData
+    
+    // Reset all player scores
+    const resetPlayers: Record<string, RoomPlayer> = {}
+    for (const [playerId, player] of Object.entries(roomData.players)) {
+      resetPlayers[playerId] = {
+        ...player,
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        ready: true, // Auto-ready for rematch
+      }
+    }
+
+    // Generate new seed for next game
+    const newSeed = generateSeed()
+
+    await updateDoc(roomRef, {
+      state: 'countdown' as RoomState, // Go directly to countdown for quick rematch
+      seed: newSeed,
+      startedAt: Date.now(),
+      endedAt: null,
+      winnerId: null,
+      players: resetPlayers,
+    })
+
+    console.log('[resetRoomForRematch] Room reset with new seed:', newSeed)
+    return true
+  } catch (error) {
+    console.error('Failed to reset room for rematch:', error)
+    return false
+  }
+}
+
+/**
  * End game and declare winner
  */
 export async function endGame(roomId: string): Promise<void> {

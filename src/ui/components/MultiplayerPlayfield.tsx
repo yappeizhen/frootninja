@@ -35,6 +35,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     reportSlice,
     endGame,
     leaveRoom,
+    rematch,
   } = useMultiplayerRoom()
 
   // Game refs
@@ -44,6 +45,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const opponentGameRef = useRef<FruitGame | null>(null)
   const timerRef = useRef<number | null>(null)
   const syncIntervalRef = useRef<number | null>(null)
+  const gameInitializedRef = useRef(false)
 
   // Local game state
   const [myScore, setMyScore] = useState(0)
@@ -53,9 +55,14 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [bombHit, setBombHit] = useState(false)
+  const [gameEnded, setGameEnded] = useState(false)
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
+      console.log('[MultiplayerPlayfield] Video ref called:', !!node)
+      if (node) {
+        console.log('[MultiplayerPlayfield] Video element dimensions:', node.clientWidth, 'x', node.clientHeight)
+      }
       videoRef(node)
     },
     [videoRef],
@@ -93,10 +100,12 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Start game when countdown ends
   useEffect(() => {
-    console.log('[MultiplayerPlayfield] roomState:', roomState, 'isPlaying:', isPlaying, 'seed:', seed)
+    console.log('[MultiplayerPlayfield] roomState:', roomState, 'isPlaying:', isPlaying, 'seed:', seed, 'gameEnded:', gameEnded)
     
-    if (roomState === 'playing' && !isPlaying && seed) {
+    // Don't reinitialize if game has already ended or already initialized
+    if (roomState === 'playing' && !isPlaying && seed && !gameEnded && !gameInitializedRef.current) {
       console.log('[MultiplayerPlayfield] Starting game initialization...')
+      gameInitializedRef.current = true
       setIsPlaying(true)
       setGameTime(30)
       setMyScore(0)
@@ -141,20 +150,28 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         }
       }, 100)
 
-      // Start game timer
+      // Score sync is now handled by the useEffect below that watches score changes
+      // This avoids stale closure issues
+    }
+  }, [roomState, isPlaying, seed, gameEnded])
+
+  // Separate effect for game timer to avoid cleanup issues
+  useEffect(() => {
+    if (isPlaying && roomState === 'playing') {
+      console.log('[MultiplayerPlayfield] Starting game timer')
       timerRef.current = window.setInterval(() => {
         setGameTime((prev) => {
           if (prev <= 1) {
-            // Time's up
-            handleGameEnd()
+            // Time's up - stop timer
+            if (timerRef.current) {
+              clearInterval(timerRef.current)
+              timerRef.current = null
+            }
             return 0
           }
           return prev - 1
         })
       }, 1000)
-
-      // Score sync is now handled by the useEffect below that watches score changes
-      // This avoids stale closure issues
     }
 
     return () => {
@@ -162,12 +179,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         clearInterval(timerRef.current)
         timerRef.current = null
       }
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current)
-        syncIntervalRef.current = null
-      }
     }
-  }, [roomState, isPlaying, seed])
+  }, [isPlaying, roomState])
 
   // Handle gestures for slicing
   useEffect(() => {
@@ -226,6 +239,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   }, [isPlaying, opponent?.lastSlice])
 
   const handleGameEnd = useCallback(async () => {
+    console.log('[MultiplayerPlayfield] handleGameEnd called')
+    setGameEnded(true)
     setIsPlaying(false)
     
     if (timerRef.current) {
@@ -248,7 +263,17 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [roomId, myScore, myCombo, myMaxCombo, syncScore, endGame])
 
-  const handleRematch = useCallback(() => {
+  // Handle game over when time reaches 0
+  useEffect(() => {
+    if (gameTime === 0 && isPlaying && !gameEnded) {
+      console.log('[MultiplayerPlayfield] Time is up! Ending game...')
+      handleGameEnd()
+    }
+  }, [gameTime, isPlaying, gameEnded, handleGameEnd])
+
+  const handleRematch = useCallback(async () => {
+    console.log('[MultiplayerPlayfield] handleRematch called')
+    
     // Reset local state
     setMyScore(0)
     setMyCombo(0)
@@ -256,6 +281,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     setGameTime(30)
     setIsPlaying(false)
     setCountdown(null)
+    setGameEnded(false)
+    gameInitializedRef.current = false
 
     // Dispose old games
     myGameRef.current?.dispose()
@@ -263,8 +290,18 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     myGameRef.current = null
     opponentGameRef.current = null
 
-    // TODO: Implement rematch flow (reset room state to waiting)
-  }, [])
+    // Clear timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    // Reset room state in Firebase (triggers countdown for both players)
+    const success = await rematch()
+    if (!success) {
+      console.error('[MultiplayerPlayfield] Rematch failed')
+    }
+  }, [rematch])
 
   const handleLeave = useCallback(async () => {
     // Cleanup
@@ -308,22 +345,18 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     )
   }
 
-  // Countdown overlay
-  if (countdown !== null) {
-    return (
-      <div className="multiplayer-playfield">
+  return (
+    <div className="multiplayer-playfield">
+      {/* Countdown overlay - rendered on top */}
+      {countdown !== null && (
         <div className="multiplayer-countdown-overlay">
           <div className="multiplayer-countdown">
             <span className="multiplayer-countdown__number">{countdown}</span>
           </div>
           <h1 className="multiplayer-countdown__text">Get Ready!</h1>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  return (
-    <div className="multiplayer-playfield">
       {/* HUD */}
       <MultiplayerHUD
         myScore={myScore}
