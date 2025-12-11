@@ -8,6 +8,7 @@ import { useUserStore } from '@/state/userStore'
 import { useMultiplayerRoom } from '@/multiplayer'
 import { WaitingRoom } from './WaitingRoom'
 import { UsernamePrompt } from './UsernamePrompt'
+import { MultiplayerPlayfield } from './MultiplayerPlayfield'
 
 interface MultiplayerMenuProps {
   onBack: () => void
@@ -17,7 +18,7 @@ type MenuView = 'menu' | 'username' | 'join' | 'waiting'
 
 export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
   const { username, setUsername } = useUserStore()
-  const { roomCode, createRoom, joinRoom } = useMultiplayerRoom()
+  const { roomCode, roomState, createRoom, joinRoom, leaveRoom } = useMultiplayerRoom()
   
   const [view, setView] = useState<MenuView>('menu')
   const [joinCode, setJoinCode] = useState('')
@@ -25,7 +26,15 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null)
 
-  // If we're in a room, show the waiting room
+  // If game is in countdown or playing state, show the multiplayer playfield
+  if (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished') {
+    return <MultiplayerPlayfield onExit={async () => {
+      await leaveRoom()
+      setView('menu')
+    }} />
+  }
+
+  // If we're in a room (waiting state), show the waiting room
   if (roomCode || view === 'waiting') {
     return <WaitingRoom onBack={onBack} />
   }

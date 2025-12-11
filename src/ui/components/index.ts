@@ -10,4 +10,7 @@ export * from './ChallengeBanner'
 export * from './LoadingScreen'
 export * from './MultiplayerMenu'
 export * from './WaitingRoom'
+export * from './MultiplayerPlayfield'
+export * from './MultiplayerHUD'
+export * from './MultiplayerGameOver'
 

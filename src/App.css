@@ -3427,3 +3427,358 @@ h1, h2, h3 {
     transform: scale(1.1);
   }
 }
+
+/* ============================================
+   MULTIPLAYER PLAYFIELD
+   ============================================ */
+
+.multiplayer-playfield {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.multiplayer-playfield__games {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 4px 1fr;
+  gap: 0;
+  padding-top: 60px; /* Space for HUD */
+}
+
+.multiplayer-playfield__my-game,
+.multiplayer-playfield__opponent-game {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-dark);
+}
+
+.multiplayer-playfield__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  opacity: 0.3;
+}
+
+.multiplayer-playfield__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.multiplayer-playfield__divider {
+  background: linear-gradient(180deg, var(--pastel-lavender), var(--pastel-mint));
+  width: 4px;
+}
+
+.multiplayer-playfield__label {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.5rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-main);
+}
+
+.multiplayer-playfield__my-game .multiplayer-playfield__label {
+  color: var(--pastel-mint);
+}
+
+.multiplayer-playfield__opponent-game .multiplayer-playfield__label {
+  color: var(--pastel-rose);
+}
+
+.multiplayer-playfield__opponent-score {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.1);
+  font-family: 'Space Grotesk', sans-serif;
+  pointer-events: none;
+}
+
+/* Multiplayer HUD */
+.multiplayer-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(12px);
+}
+
+.multiplayer-hud__player {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.multiplayer-hud__player--me {
+  flex-direction: row;
+}
+
+.multiplayer-hud__player--opponent {
+  flex-direction: row-reverse;
+}
+
+.multiplayer-hud__name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.multiplayer-hud__player--me .multiplayer-hud__name {
+  color: var(--pastel-mint);
+}
+
+.multiplayer-hud__player--opponent .multiplayer-hud__name {
+  color: var(--pastel-rose);
+}
+
+.multiplayer-hud__score {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-main);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.multiplayer-hud__combo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pastel-peach);
+  animation: combo-pulse 0.3s ease-out;
+}
+
+.multiplayer-hud__timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2rem;
+  transition: all 0.3s ease;
+}
+
+.multiplayer-hud__timer-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: 'Space Grotesk', monospace;
+  color: var(--text-main);
+}
+
+.multiplayer-hud__timer--low {
+  background: rgba(255, 200, 100, 0.2);
+}
+
+.multiplayer-hud__timer--low .multiplayer-hud__timer-value {
+  color: var(--pastel-peach);
+}
+
+.multiplayer-hud__timer--urgent {
+  background: rgba(255, 100, 100, 0.3);
+  animation: timer-pulse 0.5s ease-in-out infinite;
+}
+
+.multiplayer-hud__timer--urgent .multiplayer-hud__timer-value {
+  color: var(--pastel-rose);
+}
+
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Multiplayer Countdown Overlay */
+.multiplayer-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  z-index: 200;
+}
+
+.multiplayer-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 160px;
+  background: linear-gradient(135deg, var(--pastel-mint), var(--pastel-sky));
+  border-radius: 50%;
+  animation: pulse-countdown 1s ease-in-out infinite;
+  margin-bottom: 1.5rem;
+}
+
+.multiplayer-countdown__number {
+  font-size: 5rem;
+  font-weight: 900;
+  color: var(--bg-main);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.multiplayer-countdown__text {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* Multiplayer Game Over */
+.multiplayer-gameover__stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.multiplayer-gameover__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  min-width: 140px;
+  transition: all 0.3s ease;
+}
+
+.multiplayer-gameover__player--winner {
+  border-color: var(--pastel-mint);
+  background: rgba(109, 220, 176, 0.1);
+  transform: scale(1.05);
+}
+
+.multiplayer-gameover__player-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.multiplayer-gameover__player-score {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-main);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.multiplayer-gameover__player-combo {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.multiplayer-gameover__vs {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.multiplayer-gameover__title--win {
+  background: linear-gradient(135deg, var(--pastel-mint), var(--pastel-sky));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.multiplayer-gameover__title--lose {
+  color: var(--text-muted);
+}
+
+.multiplayer-gameover__title--tie {
+  background: linear-gradient(135deg, var(--pastel-lavender), var(--pastel-peach));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Responsive: PIP mode for smaller screens */
+@media (max-width: 1023px) {
+  .multiplayer-playfield__games {
+    grid-template-columns: 1fr;
+  }
+
+  .multiplayer-playfield__divider {
+    display: none;
+  }
+
+  .multiplayer-playfield__opponent-game {
+    position: absolute;
+    bottom: 5rem;
+    right: 1rem;
+    width: 35%;
+    max-width: 200px;
+    aspect-ratio: 4/3;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 2px solid var(--pastel-lavender);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+  }
+
+  .multiplayer-playfield__opponent-game .multiplayer-playfield__label {
+    bottom: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.6rem;
+  }
+
+  .multiplayer-hud {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .multiplayer-hud__player {
+    flex: 1;
+  }
+
+  .multiplayer-hud__score {
+    font-size: 1.25rem;
+  }
+
+  .multiplayer-hud__timer {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .multiplayer-gameover__stats {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .multiplayer-gameover__vs {
+    transform: rotate(90deg);
+  }
+}

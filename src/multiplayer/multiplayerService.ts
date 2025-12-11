@@ -1,23 +1,22 @@
 /**
  * Multiplayer Service
- * Firebase RTDB operations for room management and game sync
+ * Firestore operations for room management and game sync
  */
 
 import {
-  ref,
-  set,
-  get,
-  update,
-  remove,
-  onValue,
-  onDisconnect,
-  push,
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
   query,
-  orderByChild,
-  equalTo,
+  where,
   type Unsubscribe,
-} from 'firebase/database'
-import { getRtdb, isFirebaseEnabled } from '@/services/firebase'
+} from 'firebase/firestore'
+import { getDb, isFirebaseEnabled } from '@/services/firebase'
 import type { Room, RoomData, RoomPlayer, SliceEventMP, RoomState } from './types'
 import { generateSeed } from './SeededRNG'
 
@@ -59,14 +58,12 @@ export async function createRoom(playerName: string): Promise<Room | null> {
     return null
   }
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return null
 
   const playerId = getPlayerId()
   const roomCode = generateRoomCode()
-  const roomId = push(ref(db, 'rooms')).key
-
-  if (!roomId) return null
+  const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
   const initialPlayer: RoomPlayer = {
     id: playerId,
@@ -92,11 +89,7 @@ export async function createRoom(playerName: string): Promise<Room | null> {
   }
 
   try {
-    await set(ref(db, `rooms/${roomId}`), roomData)
-
-    // Set up disconnect cleanup for this player
-    const playerRef = ref(db, `rooms/${roomId}/players/${playerId}/connected`)
-    await onDisconnect(playerRef).set(false)
+    await setDoc(doc(db, 'rooms', roomId), roomData)
 
     return {
       id: roomId,
@@ -114,31 +107,25 @@ export async function createRoom(playerName: string): Promise<Room | null> {
 export async function findRoomByCode(code: string): Promise<Room | null> {
   if (!isFirebaseEnabled()) return null
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return null
 
   const upperCode = code.toUpperCase()
 
   try {
-    const roomsRef = ref(db, 'rooms')
-    const roomsQuery = query(roomsRef, orderByChild('code'), equalTo(upperCode))
-    const snapshot = await get(roomsQuery)
+    const roomsRef = collection(db, 'rooms')
+    const q = query(roomsRef, where('code', '==', upperCode), where('state', '==', 'waiting'))
+    const snapshot = await getDocs(q)
 
-    if (!snapshot.exists()) return null
+    if (snapshot.empty) return null
 
-    let foundRoom: Room | null = null
-    snapshot.forEach((child) => {
-      const data = child.val() as RoomData
-      // Only return rooms that are still waiting for players
-      if (data.state === 'waiting') {
-        foundRoom = {
-          id: child.key!,
-          ...data,
-        }
-      }
-    })
+    const roomDoc = snapshot.docs[0]
+    const data = roomDoc.data() as RoomData
 
-    return foundRoom
+    return {
+      id: roomDoc.id,
+      ...data,
+    }
   } catch (error) {
     console.error('Failed to find room:', error)
     return null
@@ -154,7 +141,7 @@ export async function joinRoom(
 ): Promise<boolean> {
   if (!isFirebaseEnabled()) return false
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return false
 
   const playerId = getPlayerId()
@@ -173,12 +160,12 @@ export async function joinRoom(
 
   try {
     // Check if room exists and has space
-    const roomRef = ref(db, `rooms/${roomId}`)
-    const snapshot = await get(roomRef)
+    const roomRef = doc(db, 'rooms', roomId)
+    const snapshot = await getDoc(roomRef)
 
     if (!snapshot.exists()) return false
 
-    const roomData = snapshot.val() as RoomData
+    const roomData = snapshot.data() as RoomData
     const playerCount = Object.keys(roomData.players || {}).length
 
     if (playerCount >= 2) {
@@ -192,11 +179,9 @@ export async function joinRoom(
     }
 
     // Add player to room
-    await set(ref(db, `rooms/${roomId}/players/${playerId}`), newPlayer)
-
-    // Set up disconnect cleanup
-    const playerRef = ref(db, `rooms/${roomId}/players/${playerId}/connected`)
-    await onDisconnect(playerRef).set(false)
+    await updateDoc(roomRef, {
+      [`players.${playerId}`]: newPlayer,
+    })
 
     return true
   } catch (error) {
@@ -211,36 +196,39 @@ export async function joinRoom(
 export async function leaveRoom(roomId: string): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   const playerId = getPlayerId()
 
   try {
-    const roomRef = ref(db, `rooms/${roomId}`)
-    const snapshot = await get(roomRef)
+    const roomRef = doc(db, 'rooms', roomId)
+    const snapshot = await getDoc(roomRef)
 
     if (!snapshot.exists()) return
 
-    const roomData = snapshot.val() as RoomData
+    const roomData = snapshot.data() as RoomData
     const playerCount = Object.keys(roomData.players || {}).length
 
     if (playerCount <= 1) {
       // Last player leaving, delete the room
-      await remove(roomRef)
+      await deleteDoc(roomRef)
     } else {
-      // Remove just this player
-      await remove(ref(db, `rooms/${roomId}/players/${playerId}`))
+      // Remove just this player by creating new players object without this player
+      const updatedPlayers = { ...roomData.players }
+      delete updatedPlayers[playerId]
+
+      const updates: Record<string, unknown> = { players: updatedPlayers }
 
       // If host is leaving, transfer host to remaining player
       if (roomData.hostId === playerId) {
-        const remainingPlayers = Object.keys(roomData.players).filter(
-          (id) => id !== playerId
-        )
+        const remainingPlayers = Object.keys(updatedPlayers)
         if (remainingPlayers.length > 0) {
-          await update(roomRef, { hostId: remainingPlayers[0] })
+          updates.hostId = remainingPlayers[0]
         }
       }
+
+      await updateDoc(roomRef, updates)
     }
   } catch (error) {
     console.error('Failed to leave room:', error)
@@ -256,15 +244,16 @@ export async function setPlayerReady(
 ): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   const playerId = getPlayerId()
 
   try {
-    await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-      ready,
-      lastActivity: Date.now(),
+    const roomRef = doc(db, 'rooms', roomId)
+    await updateDoc(roomRef, {
+      [`players.${playerId}.ready`]: ready,
+      [`players.${playerId}.lastActivity`]: Date.now(),
     })
   } catch (error) {
     console.error('Failed to set ready status:', error)
@@ -277,18 +266,18 @@ export async function setPlayerReady(
 export async function startGame(roomId: string): Promise<boolean> {
   if (!isFirebaseEnabled()) return false
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return false
 
   const playerId = getPlayerId()
 
   try {
-    const roomRef = ref(db, `rooms/${roomId}`)
-    const snapshot = await get(roomRef)
+    const roomRef = doc(db, 'rooms', roomId)
+    const snapshot = await getDoc(roomRef)
 
     if (!snapshot.exists()) return false
 
-    const roomData = snapshot.val() as RoomData
+    const roomData = snapshot.data() as RoomData
 
     // Only host can start
     if (roomData.hostId !== playerId) return false
@@ -299,7 +288,7 @@ export async function startGame(roomId: string): Promise<boolean> {
     if (!players.every((p) => p.ready)) return false
 
     // Start countdown
-    await update(roomRef, {
+    await updateDoc(roomRef, {
       state: 'countdown' as RoomState,
       startedAt: Date.now(),
     })
@@ -320,11 +309,12 @@ export async function updateRoomState(
 ): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   try {
-    await update(ref(db, `rooms/${roomId}`), { state })
+    const roomRef = doc(db, 'rooms', roomId)
+    await updateDoc(roomRef, { state })
   } catch (error) {
     console.error('Failed to update room state:', error)
   }
@@ -341,17 +331,18 @@ export async function syncPlayerScore(
 ): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   const playerId = getPlayerId()
 
   try {
-    await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-      score,
-      combo,
-      maxCombo,
-      lastActivity: Date.now(),
+    const roomRef = doc(db, 'rooms', roomId)
+    await updateDoc(roomRef, {
+      [`players.${playerId}.score`]: score,
+      [`players.${playerId}.combo`]: combo,
+      [`players.${playerId}.maxCombo`]: maxCombo,
+      [`players.${playerId}.lastActivity`]: Date.now(),
     })
   } catch (error) {
     console.error('Failed to sync score:', error)
@@ -368,7 +359,7 @@ export async function reportSlice(
 ): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   const playerId = getPlayerId()
@@ -382,9 +373,11 @@ export async function reportSlice(
   }
 
   try {
-    // Use push to add slice events (auto-cleanup old ones)
-    const slicesRef = ref(db, `rooms/${roomId}/players/${playerId}/slices`)
-    await push(slicesRef, sliceEvent)
+    // Store last slice in player data (simpler than subcollection for now)
+    const roomRef = doc(db, 'rooms', roomId)
+    await updateDoc(roomRef, {
+      [`players.${playerId}.lastSlice`]: sliceEvent,
+    })
   } catch (error) {
     console.error('Failed to report slice:', error)
   }
@@ -396,16 +389,16 @@ export async function reportSlice(
 export async function endGame(roomId: string): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
   try {
-    const roomRef = ref(db, `rooms/${roomId}`)
-    const snapshot = await get(roomRef)
+    const roomRef = doc(db, 'rooms', roomId)
+    const snapshot = await getDoc(roomRef)
 
     if (!snapshot.exists()) return
 
-    const roomData = snapshot.val() as RoomData
+    const roomData = snapshot.data() as RoomData
     const players = Object.values(roomData.players || {})
 
     // Determine winner
@@ -420,10 +413,10 @@ export async function endGame(roomId: string): Promise<void> {
       // If tied, winnerId stays undefined
     }
 
-    await update(roomRef, {
+    await updateDoc(roomRef, {
       state: 'finished' as RoomState,
       endedAt: Date.now(),
-      winnerId,
+      winnerId: winnerId || null,
     })
   } catch (error) {
     console.error('Failed to end game:', error)
@@ -437,15 +430,15 @@ export function subscribeToRoom(
   roomId: string,
   callback: (room: Room | null) => void
 ): Unsubscribe {
-  const db = getRtdb()
+  const db = getDb()
   if (!db) {
     callback(null)
     return () => {}
   }
 
-  const roomRef = ref(db, `rooms/${roomId}`)
+  const roomRef = doc(db, 'rooms', roomId)
 
-  return onValue(
+  return onSnapshot(
     roomRef,
     (snapshot) => {
       if (!snapshot.exists()) {
@@ -453,7 +446,7 @@ export function subscribeToRoom(
         return
       }
 
-      const data = snapshot.val() as RoomData
+      const data = snapshot.data() as RoomData
       callback({
         id: roomId,
         ...data,
@@ -467,46 +460,71 @@ export function subscribeToRoom(
 }
 
 /**
+ * Update player connection status
+ */
+export async function setPlayerConnected(
+  roomId: string,
+  connected: boolean
+): Promise<void> {
+  if (!isFirebaseEnabled()) return
+
+  const db = getDb()
+  if (!db) return
+
+  const playerId = getPlayerId()
+
+  try {
+    const roomRef = doc(db, 'rooms', roomId)
+    await updateDoc(roomRef, {
+      [`players.${playerId}.connected`]: connected,
+      [`players.${playerId}.lastActivity`]: Date.now(),
+    })
+  } catch (error) {
+    console.error('Failed to update connection status:', error)
+  }
+}
+
+/**
  * Clean up old/abandoned rooms (call periodically or on app start)
  */
 export async function cleanupStaleRooms(): Promise<void> {
   if (!isFirebaseEnabled()) return
 
-  const db = getRtdb()
+  const db = getDb()
   if (!db) return
 
-  const STALE_THRESHOLD = 5 * 60 * 1000 // 5 minutes
+  const STALE_THRESHOLD = 10 * 60 * 1000 // 10 minutes
 
   try {
-    const roomsRef = ref(db, 'rooms')
-    const snapshot = await get(roomsRef)
-
-    if (!snapshot.exists()) return
+    const roomsRef = collection(db, 'rooms')
+    const snapshot = await getDocs(roomsRef)
 
     const now = Date.now()
     const deletePromises: Promise<void>[] = []
 
-    snapshot.forEach((child) => {
-      const room = child.val() as RoomData
+    snapshot.forEach((docSnap) => {
+      const room = docSnap.data() as RoomData
       const age = now - room.createdAt
 
       // Delete rooms that are stale and still in waiting state
       if (room.state === 'waiting' && age > STALE_THRESHOLD) {
-        deletePromises.push(remove(ref(db, `rooms/${child.key}`)))
+        deletePromises.push(deleteDoc(doc(db, 'rooms', docSnap.id)))
       }
 
       // Delete finished rooms older than threshold
       if (room.state === 'finished' && room.endedAt) {
         const finishedAge = now - room.endedAt
         if (finishedAge > STALE_THRESHOLD) {
-          deletePromises.push(remove(ref(db, `rooms/${child.key}`)))
+          deletePromises.push(deleteDoc(doc(db, 'rooms', docSnap.id)))
         }
       }
     })
 
     await Promise.all(deletePromises)
+    if (deletePromises.length > 0) {
+      console.log(`Cleaned up ${deletePromises.length} stale rooms`)
+    }
   } catch (error) {
     console.error('Failed to cleanup stale rooms:', error)
   }
 }
-

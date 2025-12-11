@@ -1,9 +1,21 @@
 import * as THREE from 'three'
 import type { GestureEvent } from '@/types'
+import { SeededRNG } from '@/multiplayer/SeededRNG'
 
 const GRAVITY = new THREE.Vector3(0, -8.0, 0)
 
 type FruitType = 'strawberry' | 'orange' | 'apple' | 'watermelon' | 'grape' | 'lemon' | 'kiwi' | 'bomb'
+
+export interface FruitSpawnData {
+  id: string
+  type: FruitType
+  isBomb: boolean
+  position: { x: number; y: number; z: number }
+  velocity: { x: number; y: number; z: number }
+  spin: { x: number; y: number; z: number }
+}
+
+export type FruitSpawnCallback = (data: FruitSpawnData) => void
 
 interface FruitConfig {
   type: FruitType
@@ -99,6 +111,10 @@ export class FruitGame {
   
   // Explosion effects
   private explosionEffects: ExplosionEffect[] = []
+  
+  // Seeded RNG for multiplayer sync
+  private rng: SeededRNG | null = null
+  private onFruitSpawn: FruitSpawnCallback | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -432,6 +448,20 @@ export class FruitGame {
     this.onFruitMissed = callback
   }
 
+  /**
+   * Set a seeded RNG for deterministic spawns (multiplayer sync)
+   */
+  setSeededRNG(rng: SeededRNG | null) {
+    this.rng = rng
+  }
+
+  /**
+   * Set callback for when fruits spawn (for syncing to opponent view)
+   */
+  setOnFruitSpawn(callback: FruitSpawnCallback | null) {
+    this.onFruitSpawn = callback
+  }
+
   clearFruits() {
     this.fruits.forEach((fruit) => {
       this.scene.remove(fruit.mesh)
@@ -465,7 +495,8 @@ export class FruitGame {
     if (this.spawningEnabled) {
       this.spawnAccumulator += delta
       if (this.spawnAccumulator >= 1.0) {
-        this.spawnAccumulator = Math.random() * 0.3
+        // Use seeded RNG if available, otherwise Math.random
+        this.spawnAccumulator = (this.rng?.nextFloat(0, 0.3) ?? Math.random() * 0.3)
         this.spawnFruit()
       }
     }
@@ -593,24 +624,34 @@ export class FruitGame {
       mesh.add(spark)
     }
     
-    const startX = THREE.MathUtils.randFloatSpread(1.8)
-    mesh.position.set(startX, -1.5, THREE.MathUtils.randFloat(-0.3, 0.3))
+    // Use seeded RNG if available for deterministic spawns
+    const randFloat = (min: number, max: number) => 
+      this.rng ? this.rng.nextFloat(min, max) : THREE.MathUtils.randFloat(min, max)
+    const randSpread = (range: number) => randFloat(-range / 2, range / 2)
+    
+    const startX = randSpread(1.8)
+    const startZ = randFloat(-0.3, 0.3)
+    mesh.position.set(startX, -1.5, startZ)
     this.scene.add(mesh)
 
     const velocity = new THREE.Vector3(
-      THREE.MathUtils.randFloat(-0.4, 0.4),
-      THREE.MathUtils.randFloat(5.5, 7.0),
-      THREE.MathUtils.randFloat(-0.15, 0.15),
+      randFloat(-0.4, 0.4),
+      randFloat(5.5, 7.0),
+      randFloat(-0.15, 0.15),
     )
     
     const spin = new THREE.Vector3(
-      THREE.MathUtils.randFloat(-3, 3),
-      THREE.MathUtils.randFloat(-3, 3),
-      THREE.MathUtils.randFloat(-3, 3),
+      randFloat(-3, 3),
+      randFloat(-3, 3),
+      randFloat(-3, 3),
     )
 
-    this.fruits.push({
-      id: THREE.MathUtils.generateUUID(),
+    const fruitId = this.rng 
+      ? `f_${Date.now()}_${Math.floor(this.rng.next() * 10000)}`
+      : THREE.MathUtils.generateUUID()
+
+    const fruitBody: FruitBody = {
+      id: fruitId,
       mesh,
       velocity,
       spin,
@@ -620,7 +661,21 @@ export class FruitGame {
       initialScale: config.scale.clone(),
       type: config.type,
       isBomb,
-    })
+    }
+    
+    this.fruits.push(fruitBody)
+
+    // Notify spawn callback for multiplayer sync
+    if (this.onFruitSpawn) {
+      this.onFruitSpawn({
+        id: fruitId,
+        type: config.type,
+        isBomb,
+        position: { x: startX, y: -1.5, z: startZ },
+        velocity: { x: velocity.x, y: velocity.y, z: velocity.z },
+        spin: { x: spin.x, y: spin.y, z: spin.z },
+      })
+    }
   }
 
   private getRandomFruitConfig(): FruitConfig {
