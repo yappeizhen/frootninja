@@ -26,19 +26,6 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null)
 
-  // If game is in countdown or playing state, show the multiplayer playfield
-  if (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished') {
-    return <MultiplayerPlayfield onExit={async () => {
-      await leaveRoom()
-      setView('menu')
-    }} />
-  }
-
-  // If we're in a room (waiting state), show the waiting room
-  if (roomCode || view === 'waiting') {
-    return <WaitingRoom onBack={onBack} />
-  }
-
   const handleCreateRoom = useCallback(async () => {
     const name = username || 'Player'
     setIsLoading(true)
@@ -91,22 +78,39 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
     setPendingAction(null)
   }, [pendingAction, createRoom, setUsername])
 
-  const handleCreateClick = () => {
+  const handleCreateClick = useCallback(() => {
     if (!username) {
       setPendingAction('create')
       setView('username')
     } else {
       handleCreateRoom()
     }
-  }
+  }, [username, handleCreateRoom])
 
-  const handleJoinClick = () => {
+  const handleJoinClick = useCallback(() => {
     if (!username) {
       setPendingAction('join')
       setView('username')
     } else {
       setView('join')
     }
+  }, [username])
+
+  const handleLeavePlayfield = useCallback(async () => {
+    await leaveRoom()
+    setView('menu')
+  }, [leaveRoom])
+
+  // Now we can have conditional returns AFTER all hooks
+
+  // If game is in countdown or playing state, show the multiplayer playfield
+  if (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished') {
+    return <MultiplayerPlayfield onExit={handleLeavePlayfield} />
+  }
+
+  // If we're in a room (waiting state), show the waiting room
+  if (roomCode || view === 'waiting') {
+    return <WaitingRoom onBack={onBack} />
   }
 
   // Username prompt view
@@ -234,4 +238,3 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
     </div>
   )
 }
-

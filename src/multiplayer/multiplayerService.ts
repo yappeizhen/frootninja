@@ -55,15 +55,21 @@ export function getPlayerName(): string {
 export async function createRoom(playerName: string): Promise<Room | null> {
   if (!isFirebaseEnabled()) {
     console.warn('Firebase not configured for multiplayer')
+    console.warn('Make sure you have set up Firebase environment variables.')
     return null
   }
 
   const db = getDb()
-  if (!db) return null
+  if (!db) {
+    console.error('Failed to get Firestore database instance')
+    return null
+  }
 
   const playerId = getPlayerId()
   const roomCode = generateRoomCode()
   const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+  console.log('Creating room:', { roomId, roomCode, playerId, playerName })
 
   const initialPlayer: RoomPlayer = {
     id: playerId,
@@ -90,6 +96,7 @@ export async function createRoom(playerName: string): Promise<Room | null> {
 
   try {
     await setDoc(doc(db, 'rooms', roomId), roomData)
+    console.log('Room created successfully:', roomCode)
 
     return {
       id: roomId,
@@ -97,6 +104,14 @@ export async function createRoom(playerName: string): Promise<Room | null> {
     }
   } catch (error) {
     console.error('Failed to create room:', error)
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error name:', error.name)
+      if ('code' in error) {
+        console.error('Error code:', (error as { code: string }).code)
+      }
+    }
     return null
   }
 }
