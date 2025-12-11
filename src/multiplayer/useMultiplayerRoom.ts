@@ -122,8 +122,14 @@ export function useMultiplayerRoom() {
   )
 
   const handleStartGame = useCallback(async (): Promise<boolean> => {
-    if (!store.roomId || !store.isHost) return false
-    return await startGame(store.roomId)
+    console.log('[handleStartGame] roomId:', store.roomId, 'isHost:', store.isHost)
+    if (!store.roomId || !store.isHost) {
+      console.log('[handleStartGame] Precondition failed')
+      return false
+    }
+    const result = await startGame(store.roomId)
+    console.log('[handleStartGame] Result:', result)
+    return result
   }, [store.roomId, store.isHost])
 
   const handleSyncScore = useCallback(

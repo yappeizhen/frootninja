@@ -21,7 +21,10 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
   }
 
   if (showMultiplayerMenu) {
-    return <MultiplayerMenu onBack={() => setShowMultiplayerMenu(false)} />
+    return <MultiplayerMenu onBack={() => {
+      setShowMultiplayerMenu(false)
+      setGameMode('solo') // Reset to solo when going back
+    }} />
   }
 
   return (
@@ -45,17 +48,23 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
           </button>
           <button
             className={`game-mode-btn ${gameMode === 'multiplayer' ? 'game-mode-btn--active' : ''}`}
-            onClick={() => {
-              setGameMode('multiplayer')
-              setShowMultiplayerMenu(true)
-            }}
+            onClick={() => setGameMode('multiplayer')}
           >
             <span className="game-mode-btn__icon">👥</span>
             <span className="game-mode-btn__label">Multiplayer</span>
           </button>
         </div>
 
-        <button className="game-btn" onClick={onStart}>
+        <button 
+          className="game-btn" 
+          onClick={() => {
+            if (gameMode === 'multiplayer') {
+              setShowMultiplayerMenu(true)
+            } else {
+              onStart()
+            }
+          }}
+        >
           Start Game
         </button>
 

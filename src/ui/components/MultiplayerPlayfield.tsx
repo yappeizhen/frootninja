@@ -322,6 +322,15 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         opponentName={opponent?.name || 'Opponent'}
       />
 
+      {/* Exit button */}
+      <button 
+        className="game-menu-btn"
+        onClick={handleLeave}
+        aria-label="Exit game"
+      >
+        ✕
+      </button>
+
       {/* Split-screen game areas */}
       <div className="multiplayer-playfield__games">
         {/* My game (left side) */}

@@ -279,37 +279,60 @@ export async function setPlayerReady(
  * Start the game (host only)
  */
 export async function startGame(roomId: string): Promise<boolean> {
-  if (!isFirebaseEnabled()) return false
+  console.log('[startGame] called with roomId:', roomId)
+  
+  if (!isFirebaseEnabled()) {
+    console.log('[startGame] Firebase not enabled')
+    return false
+  }
 
   const db = getDb()
-  if (!db) return false
+  if (!db) {
+    console.log('[startGame] No db instance')
+    return false
+  }
 
   const playerId = getPlayerId()
+  console.log('[startGame] playerId:', playerId)
 
   try {
     const roomRef = doc(db, 'rooms', roomId)
+    console.log('[startGame] Getting room snapshot...')
     const snapshot = await getDoc(roomRef)
 
-    if (!snapshot.exists()) return false
+    if (!snapshot.exists()) {
+      console.log('[startGame] Room does not exist')
+      return false
+    }
 
     const roomData = snapshot.data() as RoomData
+    console.log('[startGame] Room data:', roomData)
 
     // Only host can start
-    if (roomData.hostId !== playerId) return false
+    if (roomData.hostId !== playerId) {
+      console.log('[startGame] Not the host')
+      return false
+    }
 
     // Check we have 2 players (players are implicitly ready when they join)
     const players = Object.values(roomData.players || {})
-    if (players.length < 2) return false
+    console.log('[startGame] Player count:', players.length)
+    if (players.length < 2) {
+      console.log('[startGame] Not enough players')
+      return false
+    }
 
     // Start countdown
+    console.log('[startGame] Updating room state to countdown...')
     await updateDoc(roomRef, {
       state: 'countdown' as RoomState,
       startedAt: Date.now(),
     })
 
+    console.log('[startGame] Success!')
     return true
   } catch (error) {
-    console.error('Failed to start game:', error)
+    console.error('[startGame] Failed:', error)
     return false
   }
 }
