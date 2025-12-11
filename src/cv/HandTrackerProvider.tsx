@@ -30,12 +30,16 @@ export const HandTrackerProvider = ({
 
   const start = useCallback(async () => {
     const video = videoElementRef.current
+    console.log('[HandTrackerProvider] start() called, video:', !!video)
     if (!video) return
     const tracker = ensureTracker()
     try {
+      console.log('[HandTrackerProvider] Calling tracker.start(video)')
       await tracker.start(video)
+      console.log('[HandTrackerProvider] tracker.start() completed successfully')
       setError(null)
     } catch (err) {
+      console.error('[HandTrackerProvider] tracker.start() failed:', err)
       const message =
         err instanceof Error ? err.message : 'Unknown camera error occurred'
       setError(message)

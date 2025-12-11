@@ -62,6 +62,24 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       console.log('[MultiplayerPlayfield] Video ref called:', !!node)
       if (node) {
         console.log('[MultiplayerPlayfield] Video element dimensions:', node.clientWidth, 'x', node.clientHeight)
+        
+        // Add event listeners to debug video state
+        node.addEventListener('loadedmetadata', () => {
+          console.log('[MultiplayerPlayfield] Video loadedmetadata - actual size:', node.videoWidth, 'x', node.videoHeight)
+        })
+        node.addEventListener('play', () => {
+          console.log('[MultiplayerPlayfield] Video started playing')
+        })
+        node.addEventListener('error', (e) => {
+          console.error('[MultiplayerPlayfield] Video error:', e)
+        })
+        
+        // Check if video already has a stream
+        setTimeout(() => {
+          console.log('[MultiplayerPlayfield] Video srcObject:', !!node.srcObject)
+          console.log('[MultiplayerPlayfield] Video paused:', node.paused)
+          console.log('[MultiplayerPlayfield] Video readyState:', node.readyState)
+        }, 1000)
       }
       videoRef(node)
     },

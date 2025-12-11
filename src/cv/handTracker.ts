@@ -143,6 +143,18 @@ export const createHandTracker = (options: TrackerOptions = {}): HandTracker => 
   }
 
   const start = async (video: HTMLVideoElement) => {
+    // If already ready but with a different video element, re-attach camera
+    if (status === 'ready' && videoEl !== video) {
+      console.log('[handTracker] Re-attaching camera to new video element')
+      try {
+        await attachCamera(video)
+        lastVideoTime = -1
+      } catch (error) {
+        console.error('[handTracker] Failed to re-attach camera:', error)
+      }
+      return
+    }
+    
     if (status === 'ready') return
     notifyStatus('initializing')
     try {
