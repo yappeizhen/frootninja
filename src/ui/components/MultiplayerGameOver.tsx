@@ -63,8 +63,8 @@ export const MultiplayerGameOver = ({
         </div>
 
         <div className="game-screen__actions">
-          <button className="game-btn" onClick={onRematch} disabled>
-            Rematch (Coming Soon)
+          <button className="game-btn game-btn--primary" onClick={onRematch}>
+            Rematch
           </button>
           <button className="game-btn game-btn--secondary" onClick={onLeave}>
             Leave
