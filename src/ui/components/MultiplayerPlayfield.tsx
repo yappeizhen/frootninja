@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
-import { useMultiplayerRoom, SeededRNG, updateRoomState } from '@/multiplayer'
+import { useMultiplayerRoom, SeededRNG, updateRoomState, useWebRTC } from '@/multiplayer'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { GestureTrailCanvas } from './GestureTrailCanvas'
@@ -56,6 +56,24 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [countdown, setCountdown] = useState<number | null>(null)
   const [bombHit, setBombHit] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null)
+  const opponentVideoRef = useRef<HTMLVideoElement>(null)
+
+  // WebRTC for opponent video
+  const { remoteStream } = useWebRTC({
+    roomId,
+    isHost,
+    localStream,
+    enabled: roomState === 'playing' || roomState === 'countdown',
+  })
+
+  // Attach remote stream to opponent video element
+  useEffect(() => {
+    if (opponentVideoRef.current && remoteStream) {
+      console.log('[MultiplayerPlayfield] Attaching remote stream')
+      opponentVideoRef.current.srcObject = remoteStream
+    }
+  }, [remoteStream])
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
@@ -74,11 +92,16 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           console.error('[MultiplayerPlayfield] Video error:', e)
         })
         
-        // Check if video already has a stream
+        // Check if video already has a stream and capture it for WebRTC
         setTimeout(() => {
           console.log('[MultiplayerPlayfield] Video srcObject:', !!node.srcObject)
           console.log('[MultiplayerPlayfield] Video paused:', node.paused)
           console.log('[MultiplayerPlayfield] Video readyState:', node.readyState)
+          
+          // Capture local stream for WebRTC
+          if (node.srcObject instanceof MediaStream) {
+            setLocalStream(node.srcObject)
+          }
         }, 1000)
       }
       videoRef(node)
@@ -425,12 +448,26 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
         {/* Opponent's game (right side) */}
         <div className="multiplayer-playfield__opponent-game">
+          {/* Opponent's webcam feed via WebRTC */}
+          <video
+            ref={opponentVideoRef}
+            className="multiplayer-playfield__video multiplayer-playfield__video--opponent"
+            autoPlay
+            playsInline
+            muted
+          />
           <canvas ref={opponentCanvasRef} className="multiplayer-playfield__canvas" />
           <div className="multiplayer-playfield__label">{opponent?.name || 'OPPONENT'}</div>
           {/* Opponent's last slice indicator */}
           {opponent?.score !== undefined && (
             <div className="multiplayer-playfield__opponent-score">
               {opponent.score.toLocaleString()}
+            </div>
+          )}
+          {/* Connection status indicator */}
+          {!remoteStream && (
+            <div className="multiplayer-playfield__connecting">
+              Connecting video...
             </div>
           )}
         </div>
