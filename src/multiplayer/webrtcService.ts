@@ -9,7 +9,6 @@ import {
   setDoc,
   onSnapshot,
   deleteDoc,
-  updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'

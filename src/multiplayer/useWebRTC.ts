@@ -5,7 +5,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPeerConnection, closePeerConnection, type WebRTCConnection } from './webrtcService'
-import { getPlayerId } from './multiplayerService'
 
 interface UseWebRTCOptions {
   roomId: string | null
@@ -18,7 +17,6 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'idle'>('idle')
   const connectionRef = useRef<WebRTCConnection | null>(null)
-  const playerId = getPlayerId()
 
   // Handle remote stream callback
   const handleRemoteStream = useCallback((stream: MediaStream) => {
