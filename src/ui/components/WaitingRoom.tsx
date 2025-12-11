@@ -1,6 +1,7 @@
 /**
  * WaitingRoom Component
- * Lobby where players wait and ready up before starting
+ * Lobby where players wait for opponent before starting
+ * Players are automatically ready when they join
  */
 
 import { useState, useCallback, useEffect } from 'react'
@@ -17,15 +18,29 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
     isHost,
     opponent,
     localPlayer,
-    areBothPlayersReady,
     leaveRoom,
     setReady,
     startGame,
   } = useMultiplayerRoom()
 
-  const [isReady, setIsReady] = useState(false)
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle')
   const [countdown, setCountdown] = useState<number | null>(null)
+
+  // Auto-ready when joining the room
+  useEffect(() => {
+    setReady(true)
+  }, [setReady])
+
+  // Auto-start when both players are in the room (host only)
+  useEffect(() => {
+    if (isHost && opponent && localPlayer) {
+      // Both players are here, start the game after a short delay
+      const timer = setTimeout(() => {
+        startGame()
+      }, 1500) // 1.5 second delay to let players see each other
+      return () => clearTimeout(timer)
+    }
+  }, [isHost, opponent, localPlayer, startGame])
 
   // Handle countdown when game is about to start
   useEffect(() => {
@@ -43,26 +58,6 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
       return () => clearInterval(interval)
     }
   }, [roomState])
-
-  // If game is playing, we should transition to the game (handled by parent)
-  useEffect(() => {
-    if (roomState === 'playing') {
-      // Game is starting - parent component should handle this
-      console.log('Game starting!')
-    }
-  }, [roomState])
-
-  const handleReadyToggle = useCallback(async () => {
-    const newReady = !isReady
-    setIsReady(newReady)
-    await setReady(newReady)
-  }, [isReady, setReady])
-
-  const handleStartGame = useCallback(async () => {
-    if (isHost && areBothPlayersReady) {
-      await startGame()
-    }
-  }, [isHost, areBothPlayersReady, startGame])
 
   const handleLeave = useCallback(async () => {
     await leaveRoom()
@@ -120,25 +115,21 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
         {/* Players List */}
         <div className="waiting-room__players">
           {/* Local Player */}
-          <div className={`waiting-room__player ${isReady ? 'waiting-room__player--ready' : ''}`}>
+          <div className="waiting-room__player waiting-room__player--ready">
             <span className="waiting-room__player-icon">👤</span>
             <span className="waiting-room__player-name">
               {localPlayer?.name || 'You'}
               {isHost && <span className="waiting-room__host-badge">Host</span>}
             </span>
-            <span className="waiting-room__player-status">
-              {isReady ? '✓ Ready' : 'Not Ready'}
-            </span>
+            <span className="waiting-room__player-status">✓ Joined</span>
           </div>
 
           {/* Opponent */}
           {opponent ? (
-            <div className={`waiting-room__player ${opponent.ready ? 'waiting-room__player--ready' : ''}`}>
+            <div className="waiting-room__player waiting-room__player--ready">
               <span className="waiting-room__player-icon">👤</span>
               <span className="waiting-room__player-name">{opponent.name}</span>
-              <span className="waiting-room__player-status">
-                {opponent.ready ? '✓ Ready' : 'Not Ready'}
-              </span>
+              <span className="waiting-room__player-status">✓ Joined</span>
             </div>
           ) : (
             <div className="waiting-room__player waiting-room__player--waiting">
@@ -148,25 +139,12 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="waiting-room__actions">
-          <button 
-            className={`game-btn ${isReady ? 'game-btn--ready' : ''}`}
-            onClick={handleReadyToggle}
-          >
-            {isReady ? 'Not Ready' : 'Ready!'}
-          </button>
-
-          {isHost && (
-            <button 
-              className="game-btn game-btn--primary"
-              onClick={handleStartGame}
-              disabled={!areBothPlayersReady}
-            >
-              {areBothPlayersReady ? 'Start Game' : 'Waiting for players...'}
-            </button>
-          )}
-        </div>
+        {/* Status message */}
+        {opponent ? (
+          <p className="waiting-room__status">Starting game...</p>
+        ) : (
+          <p className="waiting-room__status">Share the room code with a friend to play!</p>
+        )}
 
         <button 
           className="game-btn game-btn--secondary waiting-room__leave-btn" 
@@ -178,4 +156,3 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
     </div>
   )
 }
-

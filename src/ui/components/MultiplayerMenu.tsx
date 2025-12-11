@@ -124,6 +124,7 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
               setView('menu')
               setPendingAction(null)
             }}
+            context="multiplayer"
           />
         </div>
       </div>
