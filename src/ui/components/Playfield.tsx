@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
+import { useMultiplayerStore } from '@/state/multiplayerStore'
 import { FruitLayer } from '@/ui/components/FruitCanvas'
 import { StartScreen, GameOverScreen } from '@/ui/components/GameScreens'
 import { ChallengeBanner } from '@/ui/components/ChallengeBanner'
@@ -18,10 +19,14 @@ export const Playfield = () => {
   const { frame, status, error, videoRef, restart } = useHandData()
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const { phase, isPlaying, score, highScore, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
+  const { roomId, roomState } = useMultiplayerStore()
   const timerRef = useRef<number | null>(null)
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
+  
+  // Check if multiplayer is active (in a room and game is in progress)
+  const isMultiplayerActive = roomId && (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
 
   // Sync high score with Firebase on mount
   useEffect(() => {
@@ -121,6 +126,11 @@ export const Playfield = () => {
     }
     return null
   }, [status, error, handsDetected, phase])
+
+  // Don't render solo playfield content when multiplayer is active
+  if (isMultiplayerActive) {
+    return null
+  }
 
   return (
     <section className="playfield-stage">

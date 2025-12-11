@@ -93,17 +93,25 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Start game when countdown ends
   useEffect(() => {
+    console.log('[MultiplayerPlayfield] roomState:', roomState, 'isPlaying:', isPlaying, 'seed:', seed)
+    
     if (roomState === 'playing' && !isPlaying && seed) {
+      console.log('[MultiplayerPlayfield] Starting game initialization...')
       setIsPlaying(true)
       setGameTime(30)
       setMyScore(0)
       setMyCombo(0)
       setMyMaxCombo(0)
 
-      // Small delay to ensure canvas is properly rendered in DOM
-      requestAnimationFrame(() => {
+      // Delay to ensure canvas is properly rendered and sized in DOM
+      setTimeout(() => {
+        console.log('[MultiplayerPlayfield] Timeout callback - myCanvas:', !!myCanvasRef.current, 'opponentCanvas:', !!opponentCanvasRef.current)
+        
         // Initialize my game with seeded RNG
         if (myCanvasRef.current && !myGameRef.current) {
+          const parent = myCanvasRef.current.parentElement
+          console.log('[MultiplayerPlayfield] My canvas parent size:', parent?.clientWidth, 'x', parent?.clientHeight)
+          
           const game = new FruitGame(myCanvasRef.current)
           const rng = new SeededRNG(seed)
           game.setSeededRNG(rng)
@@ -112,21 +120,26 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           })
           game.start()
           myGameRef.current = game
-          // Ensure proper sizing
-          game.syncViewport()
+          // Ensure proper sizing after a short delay
+          setTimeout(() => game.syncViewport(), 100)
+          console.log('[MultiplayerPlayfield] My game started!')
         }
 
         // Initialize opponent's view with same seed
         if (opponentCanvasRef.current && !opponentGameRef.current) {
+          const parent = opponentCanvasRef.current.parentElement
+          console.log('[MultiplayerPlayfield] Opponent canvas parent size:', parent?.clientWidth, 'x', parent?.clientHeight)
+          
           const game = new FruitGame(opponentCanvasRef.current)
           const rng = new SeededRNG(seed) // Same seed = same spawns
           game.setSeededRNG(rng)
           game.start()
           opponentGameRef.current = game
-          // Ensure proper sizing
-          game.syncViewport()
+          // Ensure proper sizing after a short delay
+          setTimeout(() => game.syncViewport(), 100)
+          console.log('[MultiplayerPlayfield] Opponent game started!')
         }
-      })
+      }, 100)
 
       // Start game timer
       timerRef.current = window.setInterval(() => {
