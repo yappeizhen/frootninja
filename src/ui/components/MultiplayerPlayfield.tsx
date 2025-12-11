@@ -111,13 +111,21 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Initialize games when entering playing state
   useEffect(() => {
+    let countdownInterval: number | null = null
+    let transitionTimer: number | null = null
+
     if (roomState === 'countdown') {
-      // Start countdown
+      // Reset and start countdown from 3
       setCountdown(3)
-      const interval = setInterval(() => {
+
+      countdownInterval = window.setInterval(() => {
         setCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(interval)
+          if (prev === null) return prev
+          if (prev <= 1) {
+            if (countdownInterval) {
+              clearInterval(countdownInterval)
+              countdownInterval = null
+            }
             return null
           }
           return prev - 1
@@ -126,16 +134,18 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
       // Host transitions to playing after countdown (3 seconds)
       if (isHost && roomId) {
-        const transitionTimer = setTimeout(() => {
+        transitionTimer = window.setTimeout(() => {
           updateRoomState(roomId, 'playing')
         }, 3000)
-        return () => {
-          clearInterval(interval)
-          clearTimeout(transitionTimer)
-        }
       }
+    } else {
+      // Ensure countdown overlay is cleared when not in countdown state
+      setCountdown(null)
+    }
 
-      return () => clearInterval(interval)
+    return () => {
+      if (countdownInterval) clearInterval(countdownInterval)
+      if (transitionTimer) clearTimeout(transitionTimer)
     }
   }, [roomState, isHost, roomId])
 
