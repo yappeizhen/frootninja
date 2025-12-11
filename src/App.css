@@ -120,6 +120,22 @@ h1, h2, h3 {
   padding-right: calc(40px + 1rem); /* Only toggle button visible + gap */
 }
 
+/* Multiplayer mode - full screen */
+.app-shell--multiplayer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell--multiplayer .app-main {
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-shell--multiplayer .app-main--panel-closed {
+  padding-right: 0;
+}
+
 /* =====================================================
    APP HEADER
    ===================================================== */
@@ -3466,7 +3482,7 @@ h1, h2, h3 {
 .multiplayer-playfield {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   background: var(--bg-main);
   display: flex;
   flex-direction: column;
