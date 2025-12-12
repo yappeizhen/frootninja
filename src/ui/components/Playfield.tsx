@@ -5,6 +5,7 @@ import { usePlayerStore } from '@/state/playerStore'
 import { FruitLayer } from '@/ui/components/FruitCanvas'
 import { StartScreen, GameOverScreen, VersusGameOverScreen } from '@/ui/components/GameScreens'
 import { ChallengeBanner } from '@/ui/components/ChallengeBanner'
+import { LoadingScreen } from '@/ui/components/LoadingScreen'
 
 const STATUS_COPY: Record<string, string> = {
   idle: 'Waiting for camera...',
@@ -151,6 +152,11 @@ export const Playfield = () => {
           >
             ✕
           </button>
+        )}
+        
+        {/* Loading screen overlay */}
+        {status !== 'ready' && (
+          <LoadingScreen status={status} error={error} onRetry={restart} />
         )}
         
         {/* Game screens overlay */}
