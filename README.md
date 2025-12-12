@@ -16,6 +16,8 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
   <img src="https://img.shields.io/badge/MediaPipe-Hand_Tracking-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe" />
   <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Firebase-Firestore-F5820D?style=flat-square&logo=firebase&logoColor=white" alt="Firebase" />
+  <img src="https://img.shields.io/badge/WebRTC-P2P_Video-FF6B6B?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC" />
 </p>
 
 ---
@@ -26,6 +28,7 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 
 - **Solo Mode** — Race against the clock! Score as many points as you can in 60 seconds
 - **Versus Mode** — Two-player local multiplayer using left hand (P1) vs right hand (P2)
+- **Online Multiplayer** — Head-to-head 30s matches with a friend. Create a 4-letter room code, share it, and play in sync with mirrored spawns.
 
 ### 🍓 Variety of Fruits
 
@@ -49,6 +52,13 @@ Watch out! Hitting a bomb will cost you points. The bombs feature a glowing fuse
 - **Juice particles** spray on every successful slice
 - **Smooth animations** with scale-in effects and dynamic lighting
 
+### 🤝 Online Play & Leaderboards
+
+- **Real-time multiplayer** using Firebase (signaling/state) + WebRTC (P2P video)
+- **Seeded RNG** keeps fruit spawns identical for both players
+- **Shared slice events** let you see the opponent’s swipes
+- **Global leaderboard** (optional) backed by Firestore
+
 ### 📊 Live Analytics Panel
 
 Track your performance in real-time:
@@ -66,6 +76,24 @@ Track your performance in real-time:
 - Node.js 18+ 
 - A device with a webcam
 - A modern browser (Chrome, Edge, or Firefox recommended)
+
+### Environment (Firebase for multiplayer + leaderboard)
+
+Solo and local play run without configuration. Online multiplayer and the global leaderboard require a Firebase project with Firestore enabled. Create `.env.local` in the repo root:
+
+```bash
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+Firebase quickstart:
+1. Create a project at https://console.firebase.google.com
+2. Add a Web App to get the config above
+3. Enable Firestore Database (test mode is fine for local dev)
 
 ### Installation
 
@@ -103,6 +131,8 @@ Open [http://localhost:5173](http://localhost:5173) and allow camera access to p
 | [React 19](https://react.dev/) | UI framework |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
 | [Vite](https://vite.dev/) | Build tool & dev server |
+| [Firebase Firestore](https://firebase.google.com/) | Multiplayer signaling & leaderboard storage |
+| [WebRTC](https://webrtc.org/) | Peer-to-peer opponent video |
 | [Three.js](https://threejs.org/) | 3D graphics rendering |
 | [MediaPipe Tasks Vision](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) | Real-time hand tracking |
 | [Zustand](https://zustand-demo.pmnd.rs/) | State management |
@@ -135,33 +165,59 @@ Fruits are rendered using Three.js with physically-based materials featuring:
 - **Environment mapping** for realistic reflections
 - **Custom geometries** — LatheGeometry for strawberries, lemons, and apples
 
+### Online Multiplayer Flow
+
+1. Host creates a room (4-letter code) and shares it with a friend
+2. Both players allow camera access; WebRTC shares video streams peer-to-peer
+3. Firestore synchronizes lobby state, countdown, scores, and seeded fruit spawns
+4. Host starts the match once video is connected; rematches reuse the same room
+
+---
+
+## 🧑‍🤝‍🧑 Multiplayer Quickstart
+
+- Open Multiplayer from the main menu and create a room to get a 4-letter code.
+- Share the code with your friend; they join from the same menu.
+- Wait for the “video connected” status, then the host starts the match.
+- Each round is 30 seconds with mirrored fruit spawns; hit rematch to play again without leaving the room.
+
 ---
 
 ## 📁 Project Structure
 
 ```
 src/
-├── cv/                    # Computer vision / hand tracking
-│   ├── handTracker.ts     # MediaPipe integration
+├── cv/                        # Computer vision / hand tracking
+│   ├── handTracker.ts         # MediaPipe integration
 │   ├── HandTrackerProvider.tsx
-│   └── useHandData.ts     # React hook for hand data
+│   └── useHandData.ts         # React hook for hand data
 ├── game/
-│   └── FruitGame.ts       # Three.js game engine
+│   └── FruitGame.ts           # Three.js game engine
 ├── services/
-│   ├── gestureController.ts    # Slice detection algorithm
+│   ├── firebase.ts            # Firebase app + Firestore bootstrap
+│   ├── gestureController.ts   # Slice detection algorithm
+│   ├── leaderboardService.ts  # Leaderboard + username checks
 │   └── useGestureDetection.ts
+├── multiplayer/               # Online multiplayer (Firestore + WebRTC)
+│   ├── multiplayerService.ts  # Rooms, sync, rematch flow
+│   ├── webrtcService.ts       # Peer connection + signaling helpers
+│   ├── useMultiplayerRoom.ts  # React hook for lobby/game state
+│   └── SeededRNG.ts           # Deterministic fruit spawns
 ├── state/
-│   ├── gameStore.ts       # Game state (Zustand)
-│   └── playerStore.ts     # Player scores for versus mode
+│   ├── gameStore.ts           # Game state (Zustand)
+│   └── playerStore.ts         # Player scores for versus mode
 ├── types/
-│   ├── cv.ts              # Hand tracking types
-│   └── game.ts            # Game types
+│   ├── cv.ts                  # Hand tracking types
+│   └── game.ts                # Game types
 └── ui/
     └── components/
-        ├── FruitCanvas.tsx      # Three.js canvas wrapper
-        ├── GameScreens.tsx      # Start/game over screens
-        ├── GestureDebugPanel.tsx # Analytics sidebar
-        └── Playfield.tsx        # Main game area
+        ├── FruitCanvas.tsx          # Three.js canvas wrapper
+        ├── GameScreens.tsx          # Start/game over screens
+        ├── GestureDebugPanel.tsx    # Analytics sidebar
+        ├── Playfield.tsx            # Solo/local main game area
+        ├── MultiplayerMenu.tsx      # Create/join flow
+        ├── WaitingRoom.tsx          # Lobby + readiness
+        └── MultiplayerPlayfield.tsx # Split-screen multiplayer arena
 ```
 
 ---
