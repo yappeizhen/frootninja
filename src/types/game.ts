@@ -17,7 +17,7 @@ export interface FruitSpawn {
 
 export type GamePhase = 'idle' | 'calibrating' | 'running' | 'paused' | 'game-over'
 
-export type GameMode = 'solo' | 'versus'
+export type GameMode = 'solo' | 'multiplayer'
 
 export interface SliceEvent {
   fruitId: string

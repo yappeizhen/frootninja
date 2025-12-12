@@ -36,6 +36,7 @@ export const HandTrackerProvider = ({
       await tracker.start(video)
       setError(null)
     } catch (err) {
+      console.error('[HandTrackerProvider] tracker.start() failed:', err)
       const message =
         err instanceof Error ? err.message : 'Unknown camera error occurred'
       setError(message)

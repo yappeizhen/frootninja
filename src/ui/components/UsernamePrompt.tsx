@@ -5,13 +5,34 @@ import { checkUsername } from '@/services/leaderboardService'
 interface UsernamePromptProps {
   onSubmit: (username: string) => void
   onSkip?: () => void
+  /** Context for displaying different text: 'leaderboard' (default) or 'multiplayer' */
+  context?: 'leaderboard' | 'multiplayer'
 }
 
-export const UsernamePrompt = ({ onSubmit, onSkip }: UsernamePromptProps) => {
+const CONTEXT_TEXT = {
+  leaderboard: {
+    icon: '🏆',
+    title: 'Enter Your Name',
+    subtitle: 'Join the global leaderboard!',
+    submitButton: 'Submit Score',
+    skipButton: 'Skip',
+  },
+  multiplayer: {
+    icon: '👤',
+    title: "What's your name?",
+    subtitle: 'This will be shown to your opponent',
+    submitButton: 'Continue',
+    skipButton: 'Back',
+  },
+}
+
+export const UsernamePrompt = ({ onSubmit, onSkip, context = 'leaderboard' }: UsernamePromptProps) => {
   const { username: savedUsername } = useUserStore()
   const [inputValue, setInputValue] = useState(savedUsername)
   const [error, setError] = useState('')
   const [isChecking, setIsChecking] = useState(false)
+
+  const text = CONTEXT_TEXT[context]
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +48,13 @@ export const UsernamePrompt = ({ onSubmit, onSkip }: UsernamePromptProps) => {
       return
     }
 
-    // Check if username is available
+    // For multiplayer, skip the username availability check (it's just a display name)
+    if (context === 'multiplayer') {
+      onSubmit(trimmed)
+      return
+    }
+
+    // Check if username is available (for leaderboard)
     setIsChecking(true)
     setError('')
     
@@ -46,15 +73,13 @@ export const UsernamePrompt = ({ onSubmit, onSkip }: UsernamePromptProps) => {
     
     // 'available' or 'owned' - proceed
     onSubmit(trimmed)
-  }, [inputValue, onSubmit])
+  }, [inputValue, onSubmit, context])
 
   return (
     <div className="username-prompt">
-      <div className="username-prompt__icon">🏆</div>
-      <h2 className="username-prompt__title">Enter Your Name</h2>
-      <p className="username-prompt__subtitle">
-        Join the global leaderboard!
-      </p>
+      <div className="username-prompt__icon">{text.icon}</div>
+      <h2 className="username-prompt__title">{text.title}</h2>
+      <p className="username-prompt__subtitle">{text.subtitle}</p>
       
       <form onSubmit={handleSubmit} className="username-prompt__form">
         <input
@@ -74,7 +99,7 @@ export const UsernamePrompt = ({ onSubmit, onSkip }: UsernamePromptProps) => {
         
         <div className="username-prompt__actions">
           <button type="submit" className="game-btn" disabled={isChecking}>
-            {isChecking ? 'Checking...' : 'Submit Score'}
+            {isChecking ? 'Checking...' : text.submitButton}
           </button>
           {onSkip && (
             <button 
@@ -83,7 +108,7 @@ export const UsernamePrompt = ({ onSubmit, onSkip }: UsernamePromptProps) => {
               onClick={onSkip}
               disabled={isChecking}
             >
-              Skip
+              {text.skipButton}
             </button>
           )}
         </div>

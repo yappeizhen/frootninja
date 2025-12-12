@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
-import { usePlayerStore } from '@/state/playerStore'
+import { useMultiplayerStore } from '@/state/multiplayerStore'
 import { FruitLayer } from '@/ui/components/FruitCanvas'
-import { StartScreen, GameOverScreen, VersusGameOverScreen } from '@/ui/components/GameScreens'
+import { StartScreen, GameOverScreen } from '@/ui/components/GameScreens'
 import { ChallengeBanner } from '@/ui/components/ChallengeBanner'
 import { LoadingScreen } from '@/ui/components/LoadingScreen'
 
@@ -18,12 +18,15 @@ const STATUS_COPY: Record<string, string> = {
 export const Playfield = () => {
   const { frame, status, error, videoRef, restart } = useHandData()
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
-  const { phase, isPlaying, score, highScore, gameMode, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
-  const { resetPlayers } = usePlayerStore()
+  const { phase, isPlaying, score, highScore, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
+  const { roomId, roomState } = useMultiplayerStore()
   const timerRef = useRef<number | null>(null)
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
+  
+  // Check if multiplayer is active (in a room and game is in progress)
+  const isMultiplayerActive = roomId && (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
 
   // Sync high score with Firebase on mount
   useEffect(() => {
@@ -86,21 +89,18 @@ export const Playfield = () => {
 
   const handleStart = useCallback(() => {
     setPrevHighScore(highScore)
-    resetPlayers()
     startRound()
-  }, [startRound, highScore, resetPlayers])
+  }, [startRound, highScore])
 
   const handleRestart = useCallback(() => {
     setPrevHighScore(highScore)
     reset()
-    resetPlayers()
     startRound()
-  }, [reset, startRound, highScore, resetPlayers])
+  }, [reset, startRound, highScore])
 
   const handleBackToMenu = useCallback(() => {
     reset()
-    resetPlayers()
-  }, [reset, resetPlayers])
+  }, [reset])
 
   const isNewHighScore = phase === 'game-over' && score > prevHighScore
 
@@ -126,6 +126,11 @@ export const Playfield = () => {
     }
     return null
   }, [status, error, handsDetected, phase])
+
+  // Don't render solo playfield content when multiplayer is active
+  if (isMultiplayerActive) {
+    return null
+  }
 
   return (
     <section className="playfield-stage">
@@ -163,11 +168,8 @@ export const Playfield = () => {
         {phase === 'idle' && status === 'ready' && (
           <StartScreen onStart={handleStart} />
         )}
-        {phase === 'game-over' && gameMode === 'solo' && (
+        {phase === 'game-over' && (
           <GameOverScreen onRestart={handleRestart} onChangeMode={handleBackToMenu} isNewHighScore={isNewHighScore} />
-        )}
-        {phase === 'game-over' && gameMode === 'versus' && (
-          <VersusGameOverScreen onRestart={handleRestart} onChangeMode={handleBackToMenu} />
         )}
         
         {banner && phase !== 'idle' ? (

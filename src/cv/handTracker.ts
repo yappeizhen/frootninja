@@ -142,8 +142,44 @@ export const createHandTracker = (options: TrackerOptions = {}): HandTracker => 
     await video.play()
   }
 
+  let isStarting = false
+
   const start = async (video: HTMLVideoElement) => {
-    if (status === 'ready') return
+    // Prevent concurrent start attempts
+    if (isStarting) {
+      return
+    }
+
+    // If already ready with the SAME video element, do nothing
+    if (status === 'ready' && videoEl === video) {
+      return
+    }
+
+    // If already ready but with a different video element, re-attach camera
+    if (status === 'ready' && videoEl !== video) {
+      isStarting = true
+      try {
+        // Reuse existing stream if available
+        if (mediaStream && mediaStream.active) {
+          video.srcObject = mediaStream
+          video.playsInline = true
+          video.muted = true
+          await video.play()
+          videoEl = video
+          lastVideoTime = -1
+        } else {
+          await attachCamera(video)
+          lastVideoTime = -1
+        }
+      } catch (error) {
+        console.error('[handTracker] Failed to re-attach camera:', error)
+      } finally {
+        isStarting = false
+      }
+      return
+    }
+    
+    isStarting = true
     notifyStatus('initializing')
     try {
       await attachCamera(video)
@@ -163,6 +199,8 @@ export const createHandTracker = (options: TrackerOptions = {}): HandTracker => 
       stopLoop()
       emitFrame(null)
       throw error
+    } finally {
+      isStarting = false
     }
   }
 

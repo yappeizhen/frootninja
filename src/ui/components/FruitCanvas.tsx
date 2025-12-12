@@ -2,18 +2,15 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
 import { useGameStore } from '@/state/gameStore'
-import { usePlayerStore } from '@/state/playerStore'
 import { GestureTrailCanvas } from '@/ui/components/GestureTrailCanvas'
 import { GameHUD } from '@/ui/components/GameHUD'
-import { PlayerScores } from '@/ui/components/PlayerScores'
 
 export const FruitLayer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<FruitGame | undefined>(undefined)
   const resizeObserverRef = useRef<ResizeObserver | undefined>(undefined)
   const { lastGesture } = useGestureDetection()
-  const { isPlaying, gameMode, lives, registerSlice, setLives, endRound, resetCombo } = useGameStore()
-  const { registerPlayerSlice } = usePlayerStore()
+  const { isPlaying, lives, registerSlice, setLives, endRound, resetCombo } = useGameStore()
   const [bombHit, setBombHit] = useState(false)
   const [pointsDocked, setPointsDocked] = useState(false)
 
@@ -78,13 +75,11 @@ export const FruitLayer = () => {
         resetCombo()
         
         // Dock 10 points for hitting a bomb
-        if (gameMode === 'solo') {
-          registerSlice({
-            fruitId: result.fruitId,
-            scoreDelta: -10,
-            slicedAt: Date.now(),
-          })
-        }
+        registerSlice({
+          fruitId: result.fruitId,
+          scoreDelta: -10,
+          slicedAt: Date.now(),
+        })
         
         // Trigger bomb hit visual feedback
         setBombHit(true)
@@ -100,20 +95,14 @@ export const FruitLayer = () => {
         }
       } else {
         const scoreDelta = 10
-        
-        if (gameMode === 'solo') {
-          registerSlice({
-            fruitId: result.fruitId,
-            scoreDelta,
-            slicedAt: Date.now(),
-          })
-        } else {
-          // Versus mode: register to player store based on hand
-          registerPlayerSlice(result.hand, scoreDelta)
-        }
+        registerSlice({
+          fruitId: result.fruitId,
+          scoreDelta,
+          slicedAt: Date.now(),
+        })
       }
     }
-  }, [lastGesture, isPlaying, gameMode, lives, registerSlice, registerPlayerSlice, setLives, endRound, resetCombo])
+  }, [lastGesture, isPlaying, lives, registerSlice, setLives, endRound, resetCombo])
 
   useEffect(() => {
     handleGesture()
@@ -123,8 +112,7 @@ export const FruitLayer = () => {
     <div className="playfield-overlay">
       <canvas ref={canvasRef} className="playfield-fruit-canvas" />
       <GestureTrailCanvas gesture={lastGesture ?? null} />
-      {isPlaying && gameMode === 'solo' && <GameHUD bombHit={bombHit} pointsDocked={pointsDocked} />}
-      {isPlaying && gameMode === 'versus' && <PlayerScores />}
+      {isPlaying && <GameHUD bombHit={bombHit} pointsDocked={pointsDocked} />}
       
       {/* Bomb hit flash overlay */}
       {bombHit && <div className="bomb-flash-overlay" />}

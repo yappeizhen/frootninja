@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import { GestureDebugPanel, Playfield } from '@/ui/components'
+import { useMultiplayerStore } from '@/state/multiplayerStore'
+import { MultiplayerPlayfield } from '@/ui/components/MultiplayerPlayfield'
 
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(() => 
@@ -22,6 +24,10 @@ export const App = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(() => 
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 768px)').matches : true
   )
+  const { roomId, roomState, reset: resetMultiplayer } = useMultiplayerStore()
+  
+  // Check if multiplayer game is active (includes waiting to establish WebRTC early)
+  const isMultiplayerActive = roomId && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
   
   // Close panel when switching to mobile view
   useEffect(() => {
@@ -29,6 +35,30 @@ export const App = () => {
       setIsPanelOpen(false)
     }
   }, [isMobile])
+
+  const handleExitMultiplayer = () => {
+    resetMultiplayer()
+  }
+
+  // Render multiplayer playfield when active (full screen, no debug panel)
+  if (isMultiplayerActive) {
+    return (
+      <div className="app-shell app-shell--multiplayer">
+        {/* Header */}
+        <header className="app-header">
+          <h1 className="app-header__title">
+            <span className="app-header__icon">🍉</span>
+            Frootninja
+          </h1>
+        </header>
+        
+        {/* Multiplayer game */}
+        <main className="app-main app-main--panel-closed">
+          <MultiplayerPlayfield onExit={handleExitMultiplayer} />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">
