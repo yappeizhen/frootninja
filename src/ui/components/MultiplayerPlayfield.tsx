@@ -59,7 +59,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [gameEnded, setGameEnded] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
-  const opponentVideoRef = useRef<HTMLVideoElement>(null)
+  const [opponentVideoElement, setOpponentVideoElement] = useState<HTMLVideoElement | null>(null)
 
   // WebRTC for opponent video - enable early when opponent joins for faster connection
   const { remoteStream, connectionState } = useWebRTC({
@@ -70,12 +70,34 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   })
 
   // Attach remote stream to opponent video element
+  // Uses state instead of ref so effect re-runs when video element mounts
   useEffect(() => {
-    if (opponentVideoRef.current && remoteStream) {
-      console.log('[MultiplayerPlayfield] Attaching remote stream')
-      opponentVideoRef.current.srcObject = remoteStream
+    if (!opponentVideoElement || !remoteStream) return
+    
+    console.log('[MultiplayerPlayfield] Attaching remote stream, tracks:', remoteStream.getTracks().length)
+    remoteStream.getTracks().forEach(track => {
+      console.log('[MultiplayerPlayfield] Remote track:', track.kind, 'enabled:', track.enabled, 'readyState:', track.readyState)
+    })
+    
+    opponentVideoElement.srcObject = remoteStream
+    
+    // Explicitly play the video
+    opponentVideoElement.play().then(() => {
+      console.log('[MultiplayerPlayfield] Opponent video playing')
+    }).catch(err => {
+      console.error('[MultiplayerPlayfield] Failed to play opponent video:', err)
+    })
+    
+    // Debug: log when video actually starts rendering
+    const handlePlaying = () => {
+      console.log('[MultiplayerPlayfield] Opponent video is now rendering, size:', opponentVideoElement.videoWidth, 'x', opponentVideoElement.videoHeight)
     }
-  }, [remoteStream])
+    opponentVideoElement.addEventListener('playing', handlePlaying)
+    
+    return () => {
+      opponentVideoElement.removeEventListener('playing', handlePlaying)
+    }
+  }, [remoteStream, opponentVideoElement])
 
   // Poll for local stream attachment - triggered when video element is assigned
   useEffect(() => {
@@ -542,7 +564,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         <div className="multiplayer-playfield__opponent-game">
           {/* Opponent's webcam feed via WebRTC */}
           <video
-            ref={opponentVideoRef}
+            ref={setOpponentVideoElement}
             className="multiplayer-playfield__video multiplayer-playfield__video--opponent"
             autoPlay
             playsInline
