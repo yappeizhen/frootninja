@@ -172,6 +172,13 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     if (roomState === 'countdown' && (prevState === 'finished' || gameEnded)) {
       console.log('[MultiplayerPlayfield] Resetting local state for rematch')
       
+      // Reconnect WebRTC for both players on rematch
+      // This ensures fresh video connection after game over
+      if (connectionState !== 'connected' && connectionState !== 'connecting') {
+        console.log('[MultiplayerPlayfield] Reconnecting WebRTC for rematch')
+        reconnectWebRTC()
+      }
+      
       // Reset local state for this player
       setMyScore(0)
       setMyCombo(0)
