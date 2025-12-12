@@ -54,6 +54,10 @@ export async function createPeerConnection(
   const pc = new RTCPeerConnection(ICE_SERVERS)
   const unsubscribes: Unsubscribe[] = []
   let remoteStream: MediaStream | null = null
+  
+  // Queue for ICE candidates that arrive before remote description is set
+  const pendingIceCandidates: RTCIceCandidateInit[] = []
+  let remoteDescriptionSet = false
 
   // Add local tracks to connection
   localStream.getTracks().forEach((track) => {
@@ -77,6 +81,37 @@ export async function createPeerConnection(
   const iceCandidatesCol = collection(db, 'rooms', roomId, 'signaling', playerId, 'iceCandidates')
   const remoteIceCol = collection(db, 'rooms', roomId, 'signaling', isHost ? 'guest' : 'host', 'iceCandidates')
 
+  // Helper to add ICE candidate (queues if remote description not set)
+  const addIceCandidate = async (candidateData: RTCIceCandidateInit) => {
+    if (!remoteDescriptionSet) {
+      console.log('[WebRTC] Queuing ICE candidate (remote description not set yet)')
+      pendingIceCandidates.push(candidateData)
+      return
+    }
+    try {
+      const candidate = new RTCIceCandidate(candidateData)
+      await pc.addIceCandidate(candidate)
+      console.log('[WebRTC] Added ICE candidate')
+    } catch (error) {
+      console.error('[WebRTC] Failed to add ICE candidate:', error)
+    }
+  }
+
+  // Helper to flush queued ICE candidates after remote description is set
+  const flushPendingIceCandidates = async () => {
+    console.log('[WebRTC] Flushing', pendingIceCandidates.length, 'pending ICE candidates')
+    remoteDescriptionSet = true
+    for (const candidateData of pendingIceCandidates) {
+      try {
+        const candidate = new RTCIceCandidate(candidateData)
+        await pc.addIceCandidate(candidate)
+      } catch (error) {
+        console.error('[WebRTC] Failed to add queued ICE candidate:', error)
+      }
+    }
+    pendingIceCandidates.length = 0
+  }
+
   // Handle ICE candidates
   pc.onicecandidate = async (event) => {
     if (event.candidate) {
@@ -92,15 +127,10 @@ export async function createPeerConnection(
 
   // Listen for remote ICE candidates
   const unsubIce = onSnapshot(remoteIceCol, (snapshot) => {
-    snapshot.docChanges().forEach(async (change) => {
+    snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
         console.log('[WebRTC] Received remote ICE candidate')
-        try {
-          const candidate = new RTCIceCandidate(change.doc.data())
-          await pc.addIceCandidate(candidate)
-        } catch (error) {
-          console.error('[WebRTC] Failed to add ICE candidate:', error)
-        }
+        addIceCandidate(change.doc.data() as RTCIceCandidateInit)
       }
     })
   })
@@ -138,6 +168,8 @@ export async function createPeerConnection(
               type: 'answer',
               sdp: data.sdp,
             }))
+            // Now flush any ICE candidates that arrived early
+            await flushPendingIceCandidates()
           } catch (error) {
             console.error('[WebRTC] Failed to set remote description:', error)
           }
@@ -156,6 +188,8 @@ export async function createPeerConnection(
               type: 'offer',
               sdp: data.sdp,
             }))
+            // Now flush any ICE candidates that arrived early
+            await flushPendingIceCandidates()
             
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)

@@ -20,7 +20,7 @@ interface MultiplayerPlayfieldProps {
 }
 
 export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
-  const { videoRef } = useHandData()
+  const { videoRef, status: handTrackerStatus } = useHandData()
   const { lastGesture } = useGestureDetection()
   const { resetCombo, reset } = useGameStore()
   
@@ -58,8 +58,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [bombHit, setBombHit] = useState(false)
   const [gameEnded, setGameEnded] = useState(false)
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const opponentVideoRef = useRef<HTMLVideoElement>(null)
-  const localVideoElementRef = useRef<HTMLVideoElement | null>(null)
 
   // WebRTC for opponent video - enable early when opponent joins for faster connection
   const { remoteStream, connectionState } = useWebRTC({
@@ -77,64 +77,60 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [remoteStream])
 
-  // Poll for local stream attachment (hand tracker may attach after mount)
+  // Poll for local stream attachment - triggered when video element is assigned
   useEffect(() => {
-    if (localStream) return
-    const el = localVideoElementRef.current
-    if (!el) return
+    if (localStream) return // Already have stream
+    if (!videoElement) return // No video element yet
 
+    console.log('[MultiplayerPlayfield] Starting stream capture polling...')
+    
     let attempts = 0
-    const maxAttempts = 20
-    const timer = window.setInterval(() => {
-      if (el.srcObject instanceof MediaStream) {
+    const maxAttempts = 50 // 15 seconds max wait (50 * 300ms)
+    
+    const checkStream = () => {
+      if (videoElement.srcObject instanceof MediaStream) {
         console.log('[MultiplayerPlayfield] Captured local stream for WebRTC')
-        setLocalStream(el.srcObject)
+        setLocalStream(videoElement.srcObject)
+        return true
+      }
+      return false
+    }
+
+    // Check immediately
+    if (checkStream()) return
+
+    // Poll for stream
+    const timer = window.setInterval(() => {
+      if (checkStream()) {
         clearInterval(timer)
       } else if (++attempts >= maxAttempts) {
-        console.warn('[MultiplayerPlayfield] Failed to capture local stream after retries')
+        console.warn('[MultiplayerPlayfield] Failed to capture local stream after', maxAttempts, 'attempts')
         clearInterval(timer)
       }
     }, 300)
 
-    // Run immediately once
-    if (el.srcObject instanceof MediaStream) {
-      console.log('[MultiplayerPlayfield] Captured local stream for WebRTC (immediate)')
-      setLocalStream(el.srcObject)
-      clearInterval(timer)
-    }
-
     return () => clearInterval(timer)
-  }, [localStream])
+  }, [localStream, videoElement])
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
       console.log('[MultiplayerPlayfield] Video ref called:', !!node)
       if (node) {
-        localVideoElementRef.current = node
-        console.log('[MultiplayerPlayfield] Video element dimensions:', node.clientWidth, 'x', node.clientHeight)
+        setVideoElement(node) // Trigger the polling effect
         
-        // Add event listeners to debug video state
+        // Debug logging
         node.addEventListener('loadedmetadata', () => {
-          console.log('[MultiplayerPlayfield] Video loadedmetadata - actual size:', node.videoWidth, 'x', node.videoHeight)
+          console.log('[MultiplayerPlayfield] Video loadedmetadata - size:', node.videoWidth, 'x', node.videoHeight)
         })
         node.addEventListener('play', () => {
           console.log('[MultiplayerPlayfield] Video started playing')
-        })
-        node.addEventListener('error', (e) => {
-          console.error('[MultiplayerPlayfield] Video error:', e)
-        })
-        
-        // Check if video already has a stream and capture it for WebRTC
-        setTimeout(() => {
-          console.log('[MultiplayerPlayfield] Video srcObject:', !!node.srcObject)
-          console.log('[MultiplayerPlayfield] Video paused:', node.paused)
-          console.log('[MultiplayerPlayfield] Video readyState:', node.readyState)
-          
-          // Capture local stream for WebRTC
+          // Also try to capture stream when video starts playing
           if (node.srcObject instanceof MediaStream) {
             setLocalStream(node.srcObject)
           }
-        }, 1000)
+        })
+      } else {
+        setVideoElement(null)
       }
       videoRef(node)
     },
@@ -466,16 +462,26 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         {/* Waiting room overlay */}
         <WaitingRoom onBack={handleLeave} />
         {/* WebRTC connection status - shown during waiting */}
-        {localStream && (
-          <div className="multiplayer-playfield__webrtc-status">
-            <span className={`webrtc-status-dot webrtc-status-dot--${connectionState}`} />
-            {connectionState === 'connected' 
-              ? 'Video connected' 
-              : connectionState === 'connecting' 
-                ? 'Connecting video...'
-                : 'Preparing video...'}
-          </div>
-        )}
+        <div className="multiplayer-playfield__webrtc-status">
+          <span className={`webrtc-status-dot webrtc-status-dot--${
+            handTrackerStatus === 'permission-denied' ? 'failed' 
+            : !localStream ? 'initializing' 
+            : connectionState
+          }`} />
+          {handTrackerStatus === 'initializing'
+            ? 'Loading camera...'
+            : handTrackerStatus === 'permission-denied'
+              ? 'Camera access denied'
+              : !localStream 
+                ? 'Starting camera...'
+                : connectionState === 'connected' 
+                  ? 'Video connected' 
+                  : connectionState === 'connecting' 
+                    ? 'Connecting video...'
+                    : opponent 
+                      ? 'Waiting for opponent video...'
+                      : 'Camera ready'}
+        </div>
       </div>
     )
   }
