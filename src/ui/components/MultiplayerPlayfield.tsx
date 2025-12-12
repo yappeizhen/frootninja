@@ -488,7 +488,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           muted
         />
         {/* Waiting room overlay */}
-        <WaitingRoom onBack={handleLeave} />
+        <WaitingRoom onBack={handleLeave} isVideoConnected={connectionState === 'connected'} />
         {/* WebRTC connection status - shown during waiting */}
         <div className="multiplayer-playfield__webrtc-status">
           <span className={`webrtc-status-dot webrtc-status-dot--${

@@ -9,9 +9,10 @@ import { useMultiplayerRoom } from '@/multiplayer'
 
 interface WaitingRoomProps {
   onBack: () => void
+  isVideoConnected?: boolean
 }
 
-export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
+export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomProps) => {
   const {
     roomCode,
     roomState,
@@ -31,8 +32,8 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
     setReady(true)
   }, [setReady])
 
-  // Check if both players are present
-  const canStart = isHost && opponent && localPlayer
+  // Check if both players are present and video is connected
+  const canStart = isHost && opponent && localPlayer && isVideoConnected
 
   // Handle countdown when game is about to start
   useEffect(() => {
@@ -157,12 +158,18 @@ export const WaitingRoom = ({ onBack }: WaitingRoomProps) => {
               onClick={handleStartGame}
               disabled={!canStart}
             >
-              {canStart ? 'Start Game' : 'Waiting for opponent...'}
+              {!opponent 
+                ? 'Waiting for opponent...' 
+                : !isVideoConnected 
+                  ? 'Connecting video...'
+                  : 'Start Game'}
             </button>
           )}
           
           {!isHost && opponent && (
-            <p className="waiting-room__status">Waiting for host to start...</p>
+            <p className="waiting-room__status">
+              {isVideoConnected ? 'Waiting for host to start...' : 'Connecting video...'}
+            </p>
           )}
         </div>
 
