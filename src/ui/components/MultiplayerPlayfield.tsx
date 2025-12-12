@@ -61,12 +61,12 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const [opponentVideoElement, setOpponentVideoElement] = useState<HTMLVideoElement | null>(null)
 
-  // WebRTC for opponent video - enable early when opponent joins for faster connection
-  const { remoteStream, connectionState } = useWebRTC({
+  // WebRTC for opponent video - enable early and keep alive through finished state for rematch
+  const { remoteStream, connectionState, reconnect: reconnectWebRTC } = useWebRTC({
     roomId,
     isHost,
     localStream,
-    enabled: !!localStream && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing'),
+    enabled: !!localStream && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing' || roomState === 'finished'),
   })
 
   // Attach remote stream to opponent video element
@@ -419,13 +419,19 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const handleRematch = useCallback(async () => {
     console.log('[MultiplayerPlayfield] handleRematch called')
     
+    // Reconnect WebRTC if connection is not healthy
+    if (connectionState !== 'connected' && connectionState !== 'connecting') {
+      console.log('[MultiplayerPlayfield] WebRTC not connected, triggering reconnect')
+      reconnectWebRTC()
+    }
+    
     // Reset room state in Firebase (triggers countdown for both players)
     // Local state reset is handled by the useEffect that watches for roomState === 'countdown'
     const success = await rematch()
     if (!success) {
       console.error('[MultiplayerPlayfield] Rematch failed')
     }
-  }, [rematch])
+  }, [rematch, connectionState, reconnectWebRTC])
 
   const handleLeave = useCallback(async () => {
     // Cleanup

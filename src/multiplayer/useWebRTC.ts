@@ -16,6 +16,7 @@ interface UseWebRTCOptions {
 export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOptions) {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'idle'>('idle')
+  const [reconnectTrigger, setReconnectTrigger] = useState(0)
   const connectionRef = useRef<WebRTCConnection | null>(null)
 
   // Handle remote stream callback
@@ -24,10 +25,37 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
     setRemoteStream(stream)
   }, [])
 
+  // Force reconnection (useful for rematch when connection was lost)
+  const reconnect = useCallback(() => {
+    console.log('[useWebRTC] Reconnect requested')
+    // Close existing connection if any
+    if (connectionRef.current && roomId) {
+      closePeerConnection(connectionRef.current, roomId, isHost ? 'host' : 'guest')
+      connectionRef.current = null
+      setRemoteStream(null)
+      setConnectionState('idle')
+    }
+    // Trigger effect to create new connection
+    setReconnectTrigger(prev => prev + 1)
+  }, [roomId, isHost])
+
   // Setup WebRTC connection when conditions are met
   useEffect(() => {
     if (!enabled || !roomId || !localStream) {
       return
+    }
+
+    // Don't create new connection if one already exists and is healthy
+    if (connectionRef.current) {
+      const state = connectionRef.current.peerConnection.connectionState
+      if (state === 'connected' || state === 'connecting') {
+        console.log('[useWebRTC] Connection already exists and is healthy, skipping setup')
+        return
+      }
+      // Connection exists but is unhealthy, close it first
+      console.log('[useWebRTC] Existing connection is unhealthy, closing...')
+      closePeerConnection(connectionRef.current, roomId, isHost ? 'host' : 'guest')
+      connectionRef.current = null
     }
 
     let mounted = true
@@ -75,12 +103,13 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
         setConnectionState('idle')
       }
     }
-  }, [enabled, roomId, isHost, localStream, handleRemoteStream])
+  }, [enabled, roomId, isHost, localStream, handleRemoteStream, reconnectTrigger])
 
   return {
     remoteStream,
     connectionState,
     isConnected: connectionState === 'connected',
+    reconnect,
   }
 }
 
