@@ -3528,6 +3528,10 @@ h1, h2, h3 {
   z-index: 0;
 }
 
+.multiplayer-playfield__video--opponent {
+  transform: scaleX(1); /* Don't mirror opponent - show them as they appear */
+}
+
 .multiplayer-playfield__canvas {
   position: absolute;
   inset: 0;
@@ -3591,6 +3595,65 @@ h1, h2, h3 {
   color: var(--text-muted);
   white-space: nowrap;
   z-index: 10;
+}
+
+/* Hidden video for WebRTC stream capture during waiting */
+.multiplayer-playfield__video--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Waiting state wrapper */
+.multiplayer-playfield--waiting {
+  position: relative;
+}
+
+/* WebRTC status indicator in waiting room */
+.multiplayer-playfield__webrtc-status {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  z-index: 100;
+}
+
+.webrtc-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.webrtc-status-dot--connected {
+  background: var(--pastel-mint);
+  box-shadow: 0 0 8px var(--pastel-mint);
+}
+
+.webrtc-status-dot--connecting {
+  background: var(--pastel-peach);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.webrtc-status-dot--new,
+.webrtc-status-dot--idle {
+  background: var(--text-muted);
+}
+
+.webrtc-status-dot--failed,
+.webrtc-status-dot--disconnected {
+  background: var(--pastel-rose);
 }
 
 /* Multiplayer HUD */

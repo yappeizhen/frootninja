@@ -26,8 +26,8 @@ export const App = () => {
   )
   const { roomId, roomState, reset: resetMultiplayer } = useMultiplayerStore()
   
-  // Check if multiplayer game is active
-  const isMultiplayerActive = roomId && (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
+  // Check if multiplayer game is active (includes waiting to establish WebRTC early)
+  const isMultiplayerActive = roomId && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
   
   // Close panel when switching to mobile view
   useEffect(() => {

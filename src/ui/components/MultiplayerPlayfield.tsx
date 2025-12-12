@@ -13,6 +13,7 @@ import { useGestureDetection } from '@/services/useGestureDetection'
 import { GestureTrailCanvas } from './GestureTrailCanvas'
 import { MultiplayerHUD } from './MultiplayerHUD'
 import { MultiplayerGameOver } from './MultiplayerGameOver'
+import { WaitingRoom } from './WaitingRoom'
 
 interface MultiplayerPlayfieldProps {
   onExit: () => void
@@ -60,12 +61,12 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const opponentVideoRef = useRef<HTMLVideoElement>(null)
   const localVideoElementRef = useRef<HTMLVideoElement | null>(null)
 
-  // WebRTC for opponent video
-  const { remoteStream } = useWebRTC({
+  // WebRTC for opponent video - enable early when opponent joins for faster connection
+  const { remoteStream, connectionState } = useWebRTC({
     roomId,
     isHost,
     localStream,
-    enabled: roomState === 'playing' || roomState === 'countdown',
+    enabled: !!localStream && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing'),
   })
 
   // Attach remote stream to opponent video element
@@ -447,6 +448,35 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         onRematch={handleRematch}
         onLeave={handleLeave}
       />
+    )
+  }
+
+  // Waiting room - show lobby UI but keep video element mounted for WebRTC setup
+  if (roomState === 'waiting') {
+    return (
+      <div className="multiplayer-playfield multiplayer-playfield--waiting">
+        {/* Hidden video element to capture stream for WebRTC during waiting */}
+        <video
+          ref={handleVideoRef}
+          className="multiplayer-playfield__video multiplayer-playfield__video--hidden"
+          autoPlay
+          playsInline
+          muted
+        />
+        {/* Waiting room overlay */}
+        <WaitingRoom onBack={handleLeave} />
+        {/* WebRTC connection status - shown during waiting */}
+        {localStream && (
+          <div className="multiplayer-playfield__webrtc-status">
+            <span className={`webrtc-status-dot webrtc-status-dot--${connectionState}`} />
+            {connectionState === 'connected' 
+              ? 'Video connected' 
+              : connectionState === 'connecting' 
+                ? 'Connecting video...'
+                : 'Preparing video...'}
+          </div>
+        )}
+      </div>
     )
   }
 
