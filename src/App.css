@@ -4134,7 +4134,7 @@ h1, h2, h3 {
 }
 
 .multiplayer-gameover__subtitle--tie {
-  color: var(--pastel-lavender);
+  color: var(--text-muted);
 }
 
 /* ============================================

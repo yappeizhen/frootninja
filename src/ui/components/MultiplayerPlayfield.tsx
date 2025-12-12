@@ -140,6 +140,42 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     [videoRef],
   )
 
+  // Track previous room state to detect transitions
+  const prevRoomStateRef = useRef<typeof roomState | null>(null)
+
+  // Reset local state when room enters countdown (for rematch from both players)
+  useEffect(() => {
+    const prevState = prevRoomStateRef.current
+    prevRoomStateRef.current = roomState
+
+    // Detect transition from finished → countdown (rematch scenario)
+    // Also reset on initial countdown if we had a previous game
+    if (roomState === 'countdown' && (prevState === 'finished' || gameEnded)) {
+      console.log('[MultiplayerPlayfield] Resetting local state for rematch')
+      
+      // Reset local state for this player
+      setMyScore(0)
+      setMyCombo(0)
+      setMyMaxCombo(0)
+      setGameTime(30)
+      setIsPlaying(false)
+      setGameEnded(false)
+      gameInitializedRef.current = false
+
+      // Dispose old games
+      myGameRef.current?.dispose()
+      opponentGameRef.current?.dispose()
+      myGameRef.current = null
+      opponentGameRef.current = null
+
+      // Clear timers
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [roomState, gameEnded])
+
   // Initialize games when entering playing state
   useEffect(() => {
     let countdownInterval: number | null = null
@@ -364,29 +400,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const handleRematch = useCallback(async () => {
     console.log('[MultiplayerPlayfield] handleRematch called')
     
-    // Reset local state
-    setMyScore(0)
-    setMyCombo(0)
-    setMyMaxCombo(0)
-    setGameTime(30)
-    setIsPlaying(false)
-    setCountdown(null)
-    setGameEnded(false)
-    gameInitializedRef.current = false
-
-    // Dispose old games
-    myGameRef.current?.dispose()
-    opponentGameRef.current?.dispose()
-    myGameRef.current = null
-    opponentGameRef.current = null
-
-    // Clear timers
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-
     // Reset room state in Firebase (triggers countdown for both players)
+    // Local state reset is handled by the useEffect that watches for roomState === 'countdown'
     const success = await rematch()
     if (!success) {
       console.error('[MultiplayerPlayfield] Rematch failed')
