@@ -3866,6 +3866,442 @@ h1, h2, h3 {
   }
 
   .multiplayer-gameover__vs {
-    transform: rotate(90deg);
+    /* Keep VS horizontal on mobile - no rotation */
+  }
+}
+
+/* ============================================
+   MULTIPLAYER GAME OVER - CELEBRATION REVAMP
+   ============================================ */
+
+/* Emoji display fix - ensure emojis render as color emoji, not font glyphs */
+.emoji-display {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Twemoji Mozilla', sans-serif !important;
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+  background-clip: initial !important;
+  -webkit-background-clip: initial !important;
+}
+
+/* Overlay states */
+.multiplayer-gameover-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.multiplayer-gameover-overlay--win {
+  background: rgba(8, 8, 12, 0.95);
+}
+
+.multiplayer-gameover-overlay--lose {
+  background: rgba(8, 8, 12, 0.95);
+}
+
+.multiplayer-gameover-overlay--tie {
+  background: radial-gradient(ellipse at center, rgba(196, 168, 255, 0.06) 0%, rgba(8, 8, 12, 0.95) 60%);
+}
+
+/* ============================================
+   CONFETTI PARTICLE SYSTEM
+   ============================================ */
+
+.confetti-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.confetti-particle {
+  position: absolute;
+  top: -20px;
+  left: var(--confetti-left);
+  width: var(--confetti-size);
+  height: var(--confetti-size);
+  background: var(--confetti-color);
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall var(--confetti-duration) ease-out var(--confetti-delay) forwards;
+  transform: rotate(var(--confetti-rotation));
+}
+
+.confetti-particle:nth-child(odd) {
+  border-radius: 50%;
+}
+
+.confetti-particle:nth-child(3n) {
+  width: calc(var(--confetti-size) * 0.5);
+  height: calc(var(--confetti-size) * 1.5);
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--confetti-rotation)) scale(0);
+  }
+  10% {
+    transform: translateY(10vh) rotate(calc(var(--confetti-rotation) + 90deg)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(calc(var(--confetti-rotation) + 720deg)) scale(0.5);
+  }
+}
+
+/* ============================================
+   SPARKLES AROUND TROPHY
+   ============================================ */
+
+.sparkles-container {
+  position: absolute;
+  inset: -30px;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #FFD700;
+  border-radius: 50%;
+  opacity: 0;
+  animation: sparkle-burst 2s ease-in-out infinite;
+  animation-delay: calc(var(--sparkle-index) * 0.2s);
+  box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.6);
+}
+
+.sparkle:nth-child(1) { top: 10%; left: 50%; }
+.sparkle:nth-child(2) { top: 25%; left: 85%; }
+.sparkle:nth-child(3) { top: 70%; left: 90%; }
+.sparkle:nth-child(4) { top: 85%; left: 50%; }
+.sparkle:nth-child(5) { top: 70%; left: 10%; }
+.sparkle:nth-child(6) { top: 25%; left: 15%; }
+
+@keyframes sparkle-burst {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   ICON / TROPHY WRAPPER
+   ============================================ */
+
+.multiplayer-gameover__icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.multiplayer-gameover__icon {
+  font-size: 5rem;
+  line-height: 1;
+  animation: icon-entrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+}
+
+.multiplayer-gameover__icon-wrapper--win .multiplayer-gameover__icon {
+  animation: trophy-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.multiplayer-gameover__icon-wrapper--lose .multiplayer-gameover__icon {
+  animation: icon-entrance 0.6s ease-out forwards;
+  opacity: 0.9;
+}
+
+@keyframes icon-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-20deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trophy-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-30deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(10deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trophy-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4)) drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 60px rgba(255, 215, 0, 0.4)) drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
+  }
+}
+
+/* ============================================
+   TITLE ANIMATIONS
+   ============================================ */
+
+.multiplayer-gameover__title-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  animation: title-entrance 0.6s ease-out 0.2s both;
+}
+
+@keyframes title-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.multiplayer-gameover__title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.multiplayer-gameover__title--win {
+  background: linear-gradient(135deg, var(--pastel-mint), var(--pastel-sky));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.multiplayer-gameover__title--lose {
+  background: linear-gradient(135deg, var(--pastel-rose) 0%, var(--pastel-lavender) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.85;
+}
+
+.multiplayer-gameover__title--tie {
+  background: linear-gradient(135deg, var(--pastel-lavender), var(--pastel-mint), var(--pastel-sky));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes shine-sweep {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.multiplayer-gameover__subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.multiplayer-gameover__subtitle--win {
+  color: var(--text-muted);
+}
+
+.multiplayer-gameover__subtitle--lose {
+  color: var(--text-muted);
+}
+
+.multiplayer-gameover__subtitle--tie {
+  color: var(--pastel-lavender);
+}
+
+/* ============================================
+   SCORE CARDS REVAMP
+   ============================================ */
+
+.multiplayer-gameover--win .multiplayer-gameover__stats,
+.multiplayer-gameover--lose .multiplayer-gameover__stats,
+.multiplayer-gameover--tie .multiplayer-gameover__stats {
+  animation: stats-entrance 0.6s ease-out 0.4s both;
+}
+
+@keyframes stats-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.multiplayer-gameover--win .multiplayer-gameover__player--winner,
+.multiplayer-gameover--lose .multiplayer-gameover__player--winner {
+  border-color: var(--pastel-mint);
+  background: rgba(109, 220, 176, 0.15);
+  animation: winner-card-glow 2s ease-in-out infinite;
+}
+
+@keyframes winner-card-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(109, 220, 176, 0.2), inset 0 0 20px rgba(109, 220, 176, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(109, 220, 176, 0.4), inset 0 0 30px rgba(109, 220, 176, 0.1);
+  }
+}
+
+.multiplayer-gameover__player-score {
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.1s ease;
+}
+
+/* ============================================
+   BUTTON ANIMATIONS
+   ============================================ */
+
+.multiplayer-gameover__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.multiplayer-gameover__btn {
+  animation: btn-slide-up 0.5s ease-out both;
+}
+
+.multiplayer-gameover__btn--rematch {
+  animation-delay: 0.6s;
+}
+
+.multiplayer-gameover__btn--leave {
+  animation-delay: 0.7s;
+}
+
+@keyframes btn-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.multiplayer-gameover__btn--pulse {
+  animation: btn-slide-up 0.5s ease-out 0.6s both,
+             rematch-pulse 2s ease-in-out 1.5s infinite;
+}
+
+@keyframes rematch-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 143, 171, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(255, 143, 171, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* ============================================
+   LOSE STATE SPECIFIC STYLES
+   ============================================ */
+
+.multiplayer-gameover--lose {
+  animation: lose-entrance 0.6s ease-out forwards;
+}
+
+@keyframes lose-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.multiplayer-gameover--lose .multiplayer-gameover__icon-wrapper {
+  opacity: 0.9;
+}
+
+.multiplayer-gameover--lose .multiplayer-gameover__player:not(.multiplayer-gameover__player--winner) {
+  opacity: 0.7;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS FOR REVAMP
+   ============================================ */
+
+@media (max-width: 768px) {
+  .multiplayer-gameover__icon {
+    font-size: 4rem;
+  }
+  
+  .multiplayer-gameover__title {
+    font-size: 1.75rem;
+  }
+  
+  .multiplayer-gameover__subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .sparkles-container {
+    inset: -20px;
+  }
+  
+  .sparkle {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .confetti-particle {
+    --confetti-size: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .multiplayer-gameover__icon {
+    font-size: 3rem;
+  }
+  
+  .multiplayer-gameover__title {
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+  
+  .multiplayer-gameover__subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+  
+  .multiplayer-gameover__actions {
+    max-width: 280px;
   }
 }
