@@ -54,7 +54,6 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
 
   const handleStartGame = useCallback(async () => {
     if (canStart) {
-      console.log('Starting game...')
       const success = await startGame()
       if (!success) {
         console.error('Failed to start game')

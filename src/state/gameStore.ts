@@ -108,12 +108,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       if (localHighScore > firebaseHighScore && localHighScore > 0) {
         const username = useUserStore.getState().username
         if (username) {
-          console.log(`Syncing local high score ${localHighScore} to Firebase...`)
           await submitScore(username, localHighScore, 'solo')
         }
       }
-      
-      console.log(`High score sync: Firebase=${firebaseHighScore}, Local=${localHighScore}, Best=${bestScore}`)
     } catch (error) {
       console.error('Failed to sync high score:', error)
     }

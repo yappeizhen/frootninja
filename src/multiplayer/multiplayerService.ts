@@ -69,8 +69,6 @@ export async function createRoom(playerName: string): Promise<Room | null> {
   const roomCode = generateRoomCode()
   const roomId = `room_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
-  console.log('Creating room:', { roomId, roomCode, playerId, playerName })
-
   const initialPlayer: RoomPlayer = {
     id: playerId,
     name: playerName,
@@ -96,7 +94,6 @@ export async function createRoom(playerName: string): Promise<Room | null> {
 
   try {
     await setDoc(doc(db, 'rooms', roomId), roomData)
-    console.log('Room created successfully:', roomCode)
 
     return {
       id: roomId,
@@ -184,12 +181,10 @@ export async function joinRoom(
     const playerCount = Object.keys(roomData.players || {}).length
 
     if (playerCount >= 2) {
-      console.warn('Room is full')
       return false
     }
 
     if (roomData.state !== 'waiting') {
-      console.warn('Room is not accepting players')
       return false
     }
 
@@ -279,57 +274,44 @@ export async function setPlayerReady(
  * Start the game (host only)
  */
 export async function startGame(roomId: string): Promise<boolean> {
-  console.log('[startGame] called with roomId:', roomId)
-  
   if (!isFirebaseEnabled()) {
-    console.log('[startGame] Firebase not enabled')
     return false
   }
 
   const db = getDb()
   if (!db) {
-    console.log('[startGame] No db instance')
     return false
   }
 
   const playerId = getPlayerId()
-  console.log('[startGame] playerId:', playerId)
 
   try {
     const roomRef = doc(db, 'rooms', roomId)
-    console.log('[startGame] Getting room snapshot...')
     const snapshot = await getDoc(roomRef)
 
     if (!snapshot.exists()) {
-      console.log('[startGame] Room does not exist')
       return false
     }
 
     const roomData = snapshot.data() as RoomData
-    console.log('[startGame] Room data:', roomData)
 
     // Only host can start
     if (roomData.hostId !== playerId) {
-      console.log('[startGame] Not the host')
       return false
     }
 
     // Check we have 2 players (players are implicitly ready when they join)
     const players = Object.values(roomData.players || {})
-    console.log('[startGame] Player count:', players.length)
     if (players.length < 2) {
-      console.log('[startGame] Not enough players')
       return false
     }
 
     // Start countdown
-    console.log('[startGame] Updating room state to countdown...')
     await updateDoc(roomRef, {
       state: 'countdown' as RoomState,
       startedAt: Date.now(),
     })
 
-    console.log('[startGame] Success!')
     return true
   } catch (error) {
     console.error('[startGame] Failed:', error)
@@ -460,8 +442,6 @@ export async function resetRoomForRematch(roomId: string): Promise<boolean> {
       winnerId: null,
       players: resetPlayers,
     })
-
-    console.log('[resetRoomForRematch] Room reset with new seed:', newSeed)
     return true
   } catch (error) {
     console.error('Failed to reset room for rematch:', error)
@@ -607,9 +587,6 @@ export async function cleanupStaleRooms(): Promise<void> {
     })
 
     await Promise.all(deletePromises)
-    if (deletePromises.length > 0) {
-      console.log(`Cleaned up ${deletePromises.length} stale rooms`)
-    }
   } catch (error) {
     console.error('Failed to cleanup stale rooms:', error)
   }

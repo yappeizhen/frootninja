@@ -147,19 +147,16 @@ export const createHandTracker = (options: TrackerOptions = {}): HandTracker => 
   const start = async (video: HTMLVideoElement) => {
     // Prevent concurrent start attempts
     if (isStarting) {
-      console.log('[handTracker] start() already in progress, skipping')
       return
     }
 
     // If already ready with the SAME video element, do nothing
     if (status === 'ready' && videoEl === video) {
-      console.log('[handTracker] Already ready with this video element')
       return
     }
 
     // If already ready but with a different video element, re-attach camera
     if (status === 'ready' && videoEl !== video) {
-      console.log('[handTracker] Re-attaching camera to new video element')
       isStarting = true
       try {
         // Reuse existing stream if available
@@ -170,7 +167,6 @@ export const createHandTracker = (options: TrackerOptions = {}): HandTracker => 
           await video.play()
           videoEl = video
           lastVideoTime = -1
-          console.log('[handTracker] Reused existing stream for new video')
         } else {
           await attachCamera(video)
           lastVideoTime = -1

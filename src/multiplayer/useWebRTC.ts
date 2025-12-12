@@ -21,13 +21,11 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
 
   // Handle remote stream callback
   const handleRemoteStream = useCallback((stream: MediaStream) => {
-    console.log('[useWebRTC] Received remote stream')
     setRemoteStream(stream)
   }, [])
 
   // Force reconnection (useful for rematch when connection was lost)
   const reconnect = useCallback(() => {
-    console.log('[useWebRTC] Reconnect requested')
     // Close existing connection if any
     if (connectionRef.current && roomId) {
       closePeerConnection(connectionRef.current, roomId, isHost ? 'host' : 'guest')
@@ -49,11 +47,9 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
     if (connectionRef.current) {
       const state = connectionRef.current.peerConnection.connectionState
       if (state === 'connected' || state === 'connecting') {
-        console.log('[useWebRTC] Connection already exists and is healthy, skipping setup')
         return
       }
       // Connection exists but is unhealthy, close it first
-      console.log('[useWebRTC] Existing connection is unhealthy, closing...')
       closePeerConnection(connectionRef.current, roomId, isHost ? 'host' : 'guest')
       connectionRef.current = null
     }
@@ -61,8 +57,6 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
     let mounted = true
 
     const setupConnection = async () => {
-      console.log('[useWebRTC] Setting up WebRTC connection...')
-      
       const connection = await createPeerConnection(
         roomId,
         isHost ? 'host' : 'guest',
@@ -84,7 +78,6 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
         // Monitor connection state
         connection.peerConnection.onconnectionstatechange = () => {
           const state = connection.peerConnection.connectionState
-          console.log('[useWebRTC] Connection state changed:', state)
           setConnectionState(state)
         }
         

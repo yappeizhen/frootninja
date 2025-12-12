@@ -123,13 +123,10 @@ export function useMultiplayerRoom() {
   )
 
   const handleStartGame = useCallback(async (): Promise<boolean> => {
-    console.log('[handleStartGame] roomId:', store.roomId, 'isHost:', store.isHost)
     if (!store.roomId || !store.isHost) {
-      console.log('[handleStartGame] Precondition failed')
       return false
     }
     const result = await startGame(store.roomId)
-    console.log('[handleStartGame] Result:', result)
     return result
   }, [store.roomId, store.isHost])
 
@@ -159,7 +156,6 @@ export function useMultiplayerRoom() {
 
   const handleRematch = useCallback(async (): Promise<boolean> => {
     if (!store.roomId) return false
-    console.log('[handleRematch] Resetting room for rematch...')
     return await resetRoomForRematch(store.roomId)
   }, [store.roomId])
 

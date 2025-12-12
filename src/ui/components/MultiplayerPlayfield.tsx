@@ -74,44 +74,24 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   useEffect(() => {
     if (!opponentVideoElement || !remoteStream) return
     
-    console.log('[MultiplayerPlayfield] Attaching remote stream, tracks:', remoteStream.getTracks().length)
-    remoteStream.getTracks().forEach(track => {
-      console.log('[MultiplayerPlayfield] Remote track:', track.kind, 'enabled:', track.enabled, 'readyState:', track.readyState)
-    })
-    
     opponentVideoElement.srcObject = remoteStream
     
     // Explicitly play the video
-    opponentVideoElement.play().then(() => {
-      console.log('[MultiplayerPlayfield] Opponent video playing')
-    }).catch(err => {
+    opponentVideoElement.play().catch(err => {
       console.error('[MultiplayerPlayfield] Failed to play opponent video:', err)
     })
-    
-    // Debug: log when video actually starts rendering
-    const handlePlaying = () => {
-      console.log('[MultiplayerPlayfield] Opponent video is now rendering, size:', opponentVideoElement.videoWidth, 'x', opponentVideoElement.videoHeight)
-    }
-    opponentVideoElement.addEventListener('playing', handlePlaying)
-    
-    return () => {
-      opponentVideoElement.removeEventListener('playing', handlePlaying)
-    }
   }, [remoteStream, opponentVideoElement])
 
   // Poll for local stream attachment - triggered when video element is assigned
   useEffect(() => {
     if (localStream) return // Already have stream
     if (!videoElement) return // No video element yet
-
-    console.log('[MultiplayerPlayfield] Starting stream capture polling...')
     
     let attempts = 0
     const maxAttempts = 50 // 15 seconds max wait (50 * 300ms)
     
     const checkStream = () => {
       if (videoElement.srcObject instanceof MediaStream) {
-        console.log('[MultiplayerPlayfield] Captured local stream for WebRTC')
         setLocalStream(videoElement.srcObject)
         return true
       }
@@ -136,16 +116,10 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   const handleVideoRef = useCallback(
     (node: HTMLVideoElement | null) => {
-      console.log('[MultiplayerPlayfield] Video ref called:', !!node)
       if (node) {
         setVideoElement(node) // Trigger the polling effect
         
-        // Debug logging
-        node.addEventListener('loadedmetadata', () => {
-          console.log('[MultiplayerPlayfield] Video loadedmetadata - size:', node.videoWidth, 'x', node.videoHeight)
-        })
         node.addEventListener('play', () => {
-          console.log('[MultiplayerPlayfield] Video started playing')
           // Also try to capture stream when video starts playing
           if (node.srcObject instanceof MediaStream) {
             setLocalStream(node.srcObject)
@@ -170,12 +144,9 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     // Detect transition from finished → countdown (rematch scenario)
     // Also reset on initial countdown if we had a previous game
     if (roomState === 'countdown' && (prevState === 'finished' || gameEnded)) {
-      console.log('[MultiplayerPlayfield] Resetting local state for rematch')
-      
       // Reconnect WebRTC for both players on rematch
       // This ensures fresh video connection after game over
       if (connectionState !== 'connected' && connectionState !== 'connecting') {
-        console.log('[MultiplayerPlayfield] Reconnecting WebRTC for rematch')
         reconnectWebRTC()
       }
       
@@ -244,11 +215,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Start game when countdown ends
   useEffect(() => {
-    console.log('[MultiplayerPlayfield] roomState:', roomState, 'isPlaying:', isPlaying, 'seed:', seed, 'gameEnded:', gameEnded)
-    
     // Don't reinitialize if game has already ended or already initialized
     if (roomState === 'playing' && !isPlaying && seed && !gameEnded && !gameInitializedRef.current) {
-      console.log('[MultiplayerPlayfield] Starting game initialization...')
       gameInitializedRef.current = true
       setIsPlaying(true)
       setGameTime(30)
@@ -258,13 +226,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
       // Delay to ensure canvas is properly rendered and sized in DOM
       setTimeout(() => {
-        console.log('[MultiplayerPlayfield] Timeout callback - myCanvas:', !!myCanvasRef.current, 'opponentCanvas:', !!opponentCanvasRef.current)
-        
         // Initialize my game with seeded RNG
         if (myCanvasRef.current && !myGameRef.current) {
-          const parent = myCanvasRef.current.parentElement
-          console.log('[MultiplayerPlayfield] My canvas parent size:', parent?.clientWidth, 'x', parent?.clientHeight)
-          
           const game = new FruitGame(myCanvasRef.current)
           const rng = new SeededRNG(seed)
           game.setSeededRNG(rng)
@@ -275,14 +238,10 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           myGameRef.current = game
           // Ensure proper sizing after a short delay
           setTimeout(() => game.syncViewport(), 100)
-          console.log('[MultiplayerPlayfield] My game started!')
         }
 
         // Initialize opponent's view with same seed
         if (opponentCanvasRef.current && !opponentGameRef.current) {
-          const parent = opponentCanvasRef.current.parentElement
-          console.log('[MultiplayerPlayfield] Opponent canvas parent size:', parent?.clientWidth, 'x', parent?.clientHeight)
-          
           const game = new FruitGame(opponentCanvasRef.current)
           const rng = new SeededRNG(seed) // Same seed = same spawns
           game.setSeededRNG(rng)
@@ -290,7 +249,6 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           opponentGameRef.current = game
           // Ensure proper sizing after a short delay
           setTimeout(() => game.syncViewport(), 100)
-          console.log('[MultiplayerPlayfield] Opponent game started!')
         }
       }, 100)
 
@@ -302,7 +260,6 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   // Separate effect for game timer to avoid cleanup issues
   useEffect(() => {
     if (isPlaying && roomState === 'playing') {
-      console.log('[MultiplayerPlayfield] Starting game timer')
       timerRef.current = window.setInterval(() => {
         setGameTime((prev) => {
           if (prev <= 1) {
@@ -329,16 +286,10 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   // Handle gestures for slicing
   useEffect(() => {
     if (!isPlaying || !lastGesture || !myGameRef.current) {
-      // Debug: log why we're skipping
-      if (lastGesture && isPlaying) {
-        console.log('[MultiplayerPlayfield] Gesture detected but no game ref:', !!myGameRef.current)
-      }
       return
     }
 
-    console.log('[MultiplayerPlayfield] Processing gesture:', lastGesture.type, 'at', lastGesture.origin.x.toFixed(2), lastGesture.origin.y.toFixed(2))
     const result = myGameRef.current.handleGesture(lastGesture)
-    console.log('[MultiplayerPlayfield] Gesture result:', result)
     if (result) {
       if (result.isBomb) {
         // Hit a bomb
@@ -391,7 +342,6 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   }, [isPlaying, opponent?.lastSlice])
 
   const handleGameEnd = useCallback(async () => {
-    console.log('[MultiplayerPlayfield] handleGameEnd called')
     setGameEnded(true)
     setIsPlaying(false)
     
@@ -418,17 +368,13 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   // Handle game over when time reaches 0
   useEffect(() => {
     if (gameTime === 0 && isPlaying && !gameEnded) {
-      console.log('[MultiplayerPlayfield] Time is up! Ending game...')
       handleGameEnd()
     }
   }, [gameTime, isPlaying, gameEnded, handleGameEnd])
 
   const handleRematch = useCallback(async () => {
-    console.log('[MultiplayerPlayfield] handleRematch called')
-    
     // Reconnect WebRTC if connection is not healthy
     if (connectionState !== 'connected' && connectionState !== 'connecting') {
-      console.log('[MultiplayerPlayfield] WebRTC not connected, triggering reconnect')
       reconnectWebRTC()
     }
     

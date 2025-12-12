@@ -121,7 +121,6 @@ export const submitScore = async (
       const existingData = existingDoc.data() as ScoreDocument
       // Only update if new score is higher
       if (sanitizedScore <= existingData.score) {
-        console.log('Score not submitted: not a new highscore')
         return true // Still return true since this isn't an error
       }
     }

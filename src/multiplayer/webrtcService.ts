@@ -49,8 +49,6 @@ export async function createPeerConnection(
     return null
   }
 
-  console.log('[WebRTC] Creating peer connection, isHost:', isHost)
-
   const pc = new RTCPeerConnection(ICE_SERVERS)
   const unsubscribes: Unsubscribe[] = []
   let remoteStream: MediaStream | null = null
@@ -61,13 +59,11 @@ export async function createPeerConnection(
 
   // Add local tracks to connection
   localStream.getTracks().forEach((track) => {
-    console.log('[WebRTC] Adding local track:', track.kind)
     pc.addTrack(track, localStream)
   })
 
   // Handle incoming remote tracks
   pc.ontrack = (event) => {
-    console.log('[WebRTC] Received remote track:', event.track.kind)
     if (!remoteStream) {
       remoteStream = new MediaStream()
     }
@@ -84,14 +80,12 @@ export async function createPeerConnection(
   // Helper to add ICE candidate (queues if remote description not set)
   const addIceCandidate = async (candidateData: RTCIceCandidateInit) => {
     if (!remoteDescriptionSet) {
-      console.log('[WebRTC] Queuing ICE candidate (remote description not set yet)')
       pendingIceCandidates.push(candidateData)
       return
     }
     try {
       const candidate = new RTCIceCandidate(candidateData)
       await pc.addIceCandidate(candidate)
-      console.log('[WebRTC] Added ICE candidate')
     } catch (error) {
       console.error('[WebRTC] Failed to add ICE candidate:', error)
     }
@@ -99,7 +93,6 @@ export async function createPeerConnection(
 
   // Helper to flush queued ICE candidates after remote description is set
   const flushPendingIceCandidates = async () => {
-    console.log('[WebRTC] Flushing', pendingIceCandidates.length, 'pending ICE candidates')
     remoteDescriptionSet = true
     for (const candidateData of pendingIceCandidates) {
       try {
@@ -115,7 +108,6 @@ export async function createPeerConnection(
   // Handle ICE candidates
   pc.onicecandidate = async (event) => {
     if (event.candidate) {
-      console.log('[WebRTC] Sending ICE candidate')
       try {
         const candidateDoc = doc(iceCandidatesCol, Date.now().toString())
         await setDoc(candidateDoc, event.candidate.toJSON())
@@ -129,26 +121,15 @@ export async function createPeerConnection(
   const unsubIce = onSnapshot(remoteIceCol, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
-        console.log('[WebRTC] Received remote ICE candidate')
         addIceCandidate(change.doc.data() as RTCIceCandidateInit)
       }
     })
   })
   unsubscribes.push(unsubIce)
 
-  // Connection state logging
-  pc.onconnectionstatechange = () => {
-    console.log('[WebRTC] Connection state:', pc.connectionState)
-  }
-
-  pc.oniceconnectionstatechange = () => {
-    console.log('[WebRTC] ICE connection state:', pc.iceConnectionState)
-  }
-
   try {
     if (isHost) {
       // Host creates offer
-      console.log('[WebRTC] Host creating offer...')
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
       
@@ -162,7 +143,6 @@ export async function createPeerConnection(
       const unsubAnswer = onSnapshot(remoteSigDoc, async (snapshot) => {
         const data = snapshot.data()
         if (data?.type === 'answer' && pc.signalingState === 'have-local-offer') {
-          console.log('[WebRTC] Received answer')
           try {
             await pc.setRemoteDescription(new RTCSessionDescription({
               type: 'answer',
@@ -178,11 +158,9 @@ export async function createPeerConnection(
       unsubscribes.push(unsubAnswer)
     } else {
       // Guest waits for offer, then creates answer
-      console.log('[WebRTC] Guest waiting for offer...')
       const unsubOffer = onSnapshot(remoteSigDoc, async (snapshot) => {
         const data = snapshot.data()
         if (data?.type === 'offer' && pc.signalingState === 'stable') {
-          console.log('[WebRTC] Received offer, creating answer...')
           try {
             await pc.setRemoteDescription(new RTCSessionDescription({
               type: 'offer',
@@ -229,8 +207,6 @@ export async function closePeerConnection(
   playerId: string
 ): Promise<void> {
   if (!connection) return
-
-  console.log('[WebRTC] Closing peer connection')
 
   // Unsubscribe from all listeners
   connection.unsubscribes.forEach((unsub) => unsub())

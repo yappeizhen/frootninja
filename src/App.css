@@ -1902,6 +1902,9 @@ h1, h2, h3 {
    ===================================================== */
 
 @media (max-width: 768px) {
+  .multiplayer-gameover {
+    padding: 2rem 1.75rem;
+  }
   /* Remove side panel padding adjustments on mobile */
   .app-main {
     padding: 0.5rem;
@@ -2271,6 +2274,9 @@ h1, h2, h3 {
    ===================================================== */
 
 @media (max-width: 480px) {
+  .multiplayer-gameover {
+    padding: 1.5rem 1.25rem;
+  }
   .app-header {
     padding: 0.4rem 0.5rem;
   }
@@ -3965,18 +3971,25 @@ h1, h2, h3 {
 .multiplayer-gameover-overlay {
   position: relative;
   overflow: hidden;
+  background: transparent;
+  backdrop-filter: none;
 }
 
-.multiplayer-gameover-overlay--win {
-  background: rgba(8, 8, 12, 0.95);
-}
-
-.multiplayer-gameover-overlay--lose {
-  background: rgba(8, 8, 12, 0.95);
-}
-
+.multiplayer-gameover-overlay--win,
+.multiplayer-gameover-overlay--lose,
 .multiplayer-gameover-overlay--tie {
-  background: radial-gradient(ellipse at center, rgba(196, 168, 255, 0.06) 0%, rgba(8, 8, 12, 0.95) 60%);
+  background: transparent;
+}
+
+.multiplayer-gameover {
+  background:
+    linear-gradient(170deg, rgba(18, 20, 28, 0.95), rgba(12, 12, 18, 0.9)),
+    radial-gradient(120% 140% at 20% 15%, rgba(255, 143, 171, 0.08), transparent 35%);
+  border: 1px solid rgba(255, 143, 171, 0.16);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 143, 171, 0.05);
+  backdrop-filter: blur(12px);
+  padding: 3rem 2.75rem;
 }
 
 /* ============================================
