@@ -51,7 +51,7 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
             onClick={() => setGameMode('multiplayer')}
           >
             <span className="game-mode-btn__icon">👥</span>
-            <span className="game-mode-btn__label">Multiplayer</span>
+            <span className="game-mode-btn__label">Multi</span>
           </button>
         </div>
 
