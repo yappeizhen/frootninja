@@ -13,32 +13,65 @@ import {
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'
 
-// ICE servers for NAT traversal (STUN only)
-// TURN can be added via environment variables for better connectivity
-const ICE_SERVERS: RTCConfiguration = {
-  iceServers: [
+// ICE servers for NAT traversal
+const buildIceServers = (): RTCConfiguration => {
+  const iceServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-  ],
-  iceCandidatePoolSize: 10,
+  ]
+
+  // Add TURN servers from environment if configured
+  const turnUsername = import.meta.env.VITE_TURN_USERNAME
+  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL
+
+  if (turnUsername && turnCredential) {
+    // Metered.ca TURN servers (or custom TURN URL)
+    const customUrl = import.meta.env.VITE_TURN_URL
+    
+    if (customUrl) {
+      // Single custom TURN URL
+      iceServers.push({
+        urls: customUrl,
+        username: turnUsername,
+        credential: turnCredential,
+      })
+    } else {
+      // Default to Metered.ca endpoints for best coverage
+      iceServers.push(
+        {
+          urls: 'stun:stun.relay.metered.ca:80',
+        },
+        {
+          urls: 'turn:global.relay.metered.ca:80',
+          username: turnUsername,
+          credential: turnCredential,
+        },
+        {
+          urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+          username: turnUsername,
+          credential: turnCredential,
+        },
+        {
+          urls: 'turn:global.relay.metered.ca:443',
+          username: turnUsername,
+          credential: turnCredential,
+        },
+        {
+          urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+          username: turnUsername,
+          credential: turnCredential,
+        }
+      )
+    }
+    console.log('[WebRTC] TURN servers configured ✓')
+  } else {
+    console.log('[WebRTC] No TURN configured - STUN only (may fail on corporate/CGNAT networks)')
+  }
+
+  return { iceServers, iceCandidatePoolSize: 10 }
 }
 
-// Add TURN server from environment if configured
-const turnUrl = import.meta.env.VITE_TURN_URL
-const turnUsername = import.meta.env.VITE_TURN_USERNAME
-const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL
-
-if (turnUrl && turnUsername && turnCredential) {
-  ICE_SERVERS.iceServers?.push({
-    urls: turnUrl,
-    username: turnUsername,
-    credential: turnCredential,
-  })
-  console.log('[WebRTC] TURN server configured from environment')
-}
+const ICE_SERVERS = buildIceServers()
 
 export interface WebRTCConnection {
   peerConnection: RTCPeerConnection
