@@ -13,8 +13,8 @@ import {
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'
 
-// ICE servers for NAT traversal (STUN + TURN)
-// Using multiple free STUN servers for better connectivity
+// ICE servers for NAT traversal (STUN only)
+// TURN can be added via environment variables for better connectivity
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -22,26 +22,22 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    // OpenRelay public TURN server (free, no credentials required for STUN)
-    { urls: 'stun:openrelay.metered.ca:80' },
-    // Free TURN servers - these may have rate limits
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject',
-    },
   ],
   iceCandidatePoolSize: 10,
+}
+
+// Add TURN server from environment if configured
+const turnUrl = import.meta.env.VITE_TURN_URL
+const turnUsername = import.meta.env.VITE_TURN_USERNAME
+const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL
+
+if (turnUrl && turnUsername && turnCredential) {
+  ICE_SERVERS.iceServers?.push({
+    urls: turnUrl,
+    username: turnUsername,
+    credential: turnCredential,
+  })
+  console.log('[WebRTC] TURN server configured from environment')
 }
 
 export interface WebRTCConnection {
@@ -131,10 +127,15 @@ export async function createPeerConnection(
   }
   pc.oniceconnectionstatechange = () => {
     console.log('[WebRTC] ICE state:', pc.iceConnectionState)
-    // Attempt ICE restart if connection fails
-    if (pc.iceConnectionState === 'failed') {
-      console.log('[WebRTC] ICE failed, attempting restart...')
-      pc.restartIce()
+    // Attempt ICE restart if connection fails or disconnects
+    if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+      console.log('[WebRTC] ICE failed/disconnected, attempting restart in 2s...')
+      setTimeout(() => {
+        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+          console.log('[WebRTC] Restarting ICE...')
+          pc.restartIce()
+        }
+      }, 2000)
     }
   }
   pc.onsignalingstatechange = () => {
