@@ -13,81 +13,72 @@ import {
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'
 
-// ICE servers for NAT traversal
-const buildIceServers = (): RTCConfiguration => {
+// ICE servers cache
+let cachedIceServers: RTCConfiguration | null = null
+
+// Fetch TURN credentials from Metered REST API
+async function fetchIceServers(): Promise<RTCConfiguration> {
+  // Return cached if available
+  if (cachedIceServers) return cachedIceServers
+
   const iceServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
   ]
 
-  // Add TURN servers from environment if configured
-  const turnUsername = import.meta.env.VITE_TURN_USERNAME
-  const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL
+  // Try Metered REST API first (uses custom domain that may bypass firewall)
+  const apiKey = import.meta.env.VITE_METERED_API_KEY
+  const appName = import.meta.env.VITE_METERED_APP_NAME || 'frootninja'
 
-  if (turnUsername && turnCredential) {
-    // Metered.ca TURN servers (or custom TURN URL)
-    const customUrl = import.meta.env.VITE_TURN_URL
+  if (apiKey) {
+    try {
+      console.log('[WebRTC] Fetching TURN credentials from Metered API...')
+      const response = await fetch(
+        `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
+      )
+      
+      if (response.ok) {
+        const turnServers = await response.json()
+        iceServers.push(...turnServers)
+        console.log('[WebRTC] Fetched TURN servers from API ✓', turnServers.length, 'servers')
+      } else {
+        console.error('[WebRTC] API response error:', response.status)
+      }
+    } catch (error) {
+      console.error('[WebRTC] Failed to fetch from API:', error)
+    }
+  } else {
+    // Fallback to static credentials
+    const turnUsername = import.meta.env.VITE_TURN_USERNAME
+    const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL
     
-    if (customUrl) {
-      // Single custom TURN URL
-      iceServers.push({
-        urls: customUrl,
-        username: turnUsername,
-        credential: turnCredential,
-      })
-    } else {
-      // Metered.ca endpoints - prioritize TCP/TLS for corporate firewalls
+    if (turnUsername && turnCredential) {
       iceServers.push(
-        {
-          urls: 'stun:stun.relay.metered.ca:80',
-        },
-        // TLS on 443 - most likely to work on corporate networks
         {
           urls: 'turns:global.relay.metered.ca:443?transport=tcp',
           username: turnUsername,
           credential: turnCredential,
         },
-        // TCP on 443
         {
           urls: 'turn:global.relay.metered.ca:443?transport=tcp',
           username: turnUsername,
           credential: turnCredential,
         },
-        // TCP on 80
-        {
-          urls: 'turn:global.relay.metered.ca:80?transport=tcp',
-          username: turnUsername,
-          credential: turnCredential,
-        },
-        // UDP as fallback
         {
           urls: 'turn:global.relay.metered.ca:80',
           username: turnUsername,
           credential: turnCredential,
-        },
-        {
-          urls: 'turn:global.relay.metered.ca:443',
-          username: turnUsername,
-          credential: turnCredential,
         }
       )
+      console.log('[WebRTC] Using static TURN credentials ✓')
+    } else {
+      console.log('[WebRTC] No TURN configured - STUN only')
     }
-    console.log('[WebRTC] TURN servers:', iceServers.filter(s => 'username' in s).map(s => s.urls))
-    console.log('[WebRTC] TURN servers configured ✓')
-  } else {
-    console.log('[WebRTC] No TURN configured - STUN only (may fail on corporate/CGNAT networks)')
   }
 
-  return { 
-    iceServers, 
-    iceCandidatePoolSize: 10,
-    // Force relay-only to test if TURN is working
-    // Remove this line once TURN is confirmed working
-    iceTransportPolicy: 'relay' as RTCIceTransportPolicy,
-  }
+  cachedIceServers = { iceServers, iceCandidatePoolSize: 10 }
+  return cachedIceServers
 }
-
-const ICE_SERVERS = buildIceServers()
 
 export interface WebRTCConnection {
   peerConnection: RTCPeerConnection
@@ -117,7 +108,9 @@ export async function createPeerConnection(
     return null
   }
 
-  const pc = new RTCPeerConnection(ICE_SERVERS)
+  // Fetch ICE servers (includes TURN if configured)
+  const iceConfig = await fetchIceServers()
+  const pc = new RTCPeerConnection(iceConfig)
   const unsubscribes: Unsubscribe[] = []
   let remoteStream: MediaStream | null = null
   
