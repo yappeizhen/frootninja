@@ -78,7 +78,13 @@ const buildIceServers = (): RTCConfiguration => {
     console.log('[WebRTC] No TURN configured - STUN only (may fail on corporate/CGNAT networks)')
   }
 
-  return { iceServers, iceCandidatePoolSize: 10 }
+  return { 
+    iceServers, 
+    iceCandidatePoolSize: 10,
+    // Force relay-only to test if TURN is working
+    // Remove this line once TURN is confirmed working
+    iceTransportPolicy: 'relay' as RTCIceTransportPolicy,
+  }
 }
 
 const ICE_SERVERS = buildIceServers()
