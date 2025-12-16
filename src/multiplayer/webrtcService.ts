@@ -13,12 +13,35 @@ import {
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'
 
-// STUN servers for NAT traversal
+// ICE servers for NAT traversal (STUN + TURN)
+// Using multiple free STUN servers for better connectivity
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    // OpenRelay public TURN server (free, no credentials required for STUN)
+    { urls: 'stun:openrelay.metered.ca:80' },
+    // Free TURN servers - these may have rate limits
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
   ],
+  iceCandidatePoolSize: 10,
 }
 
 export interface WebRTCConnection {
@@ -77,6 +100,47 @@ export async function createPeerConnection(
   const iceCandidatesCol = collection(db, 'rooms', roomId, 'signaling', playerId, 'iceCandidates')
   const remoteIceCol = collection(db, 'rooms', roomId, 'signaling', isHost ? 'guest' : 'host', 'iceCandidates')
 
+  // Clean up stale signaling data before starting
+  try {
+    await deleteDoc(signalingDoc)
+    console.log('[WebRTC] Cleaned up old signaling data for', playerId)
+  } catch {
+    // Ignore - doc might not exist
+  }
+  
+  // Also try to clean up old ICE candidates for this player
+  // This helps when reconnecting after a failed attempt
+  try {
+    const { getDocs, deleteDoc: delDoc } = await import('firebase/firestore')
+    const oldCandidates = await getDocs(iceCandidatesCol)
+    const deletePromises = oldCandidates.docs.map(d => delDoc(d.ref))
+    if (deletePromises.length > 0) {
+      await Promise.all(deletePromises)
+      console.log('[WebRTC] Cleaned up', deletePromises.length, 'old ICE candidates for', playerId)
+    }
+  } catch {
+    // Ignore - collection might not exist
+  }
+
+  // Debug logging for connection states
+  pc.onconnectionstatechange = () => {
+    console.log('[WebRTC] Connection state:', pc.connectionState)
+    if (pc.connectionState === 'failed') {
+      console.error('[WebRTC] Connection failed - may need to restart signaling')
+    }
+  }
+  pc.oniceconnectionstatechange = () => {
+    console.log('[WebRTC] ICE state:', pc.iceConnectionState)
+    // Attempt ICE restart if connection fails
+    if (pc.iceConnectionState === 'failed') {
+      console.log('[WebRTC] ICE failed, attempting restart...')
+      pc.restartIce()
+    }
+  }
+  pc.onsignalingstatechange = () => {
+    console.log('[WebRTC] Signaling state:', pc.signalingState)
+  }
+
   // Helper to add ICE candidate (queues if remote description not set)
   const addIceCandidate = async (candidateData: RTCIceCandidateInit) => {
     if (!remoteDescriptionSet) {
@@ -108,20 +172,30 @@ export async function createPeerConnection(
   // Handle ICE candidates
   pc.onicecandidate = async (event) => {
     if (event.candidate) {
+      console.log('[WebRTC] Local ICE candidate:', event.candidate.type, event.candidate.protocol, event.candidate.address)
       try {
         const candidateDoc = doc(iceCandidatesCol, Date.now().toString())
         await setDoc(candidateDoc, event.candidate.toJSON())
       } catch (error) {
         console.error('[WebRTC] Failed to send ICE candidate:', error)
       }
+    } else {
+      console.log('[WebRTC] ICE candidate gathering complete')
     }
+  }
+
+  // Log ICE gathering state changes
+  pc.onicegatheringstatechange = () => {
+    console.log('[WebRTC] ICE gathering state:', pc.iceGatheringState)
   }
 
   // Listen for remote ICE candidates
   const unsubIce = onSnapshot(remoteIceCol, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
-        addIceCandidate(change.doc.data() as RTCIceCandidateInit)
+        const candidateData = change.doc.data() as RTCIceCandidateInit
+        console.log('[WebRTC] Remote ICE candidate received:', candidateData.candidate?.substring(0, 50))
+        addIceCandidate(candidateData)
       }
     })
   })
@@ -130,6 +204,7 @@ export async function createPeerConnection(
   try {
     if (isHost) {
       // Host creates offer
+      console.log('[WebRTC] Host creating offer...')
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
       
@@ -138,37 +213,44 @@ export async function createPeerConnection(
         sdp: offer.sdp,
         timestamp: Date.now(),
       })
+      console.log('[WebRTC] Host sent offer')
 
       // Wait for answer
       const unsubAnswer = onSnapshot(remoteSigDoc, async (snapshot) => {
         const data = snapshot.data()
+        console.log('[WebRTC] Host received data:', data?.type, 'signalingState:', pc.signalingState)
         if (data?.type === 'answer' && pc.signalingState === 'have-local-offer') {
           try {
+            console.log('[WebRTC] Host processing answer...')
             await pc.setRemoteDescription(new RTCSessionDescription({
               type: 'answer',
               sdp: data.sdp,
             }))
-            // Now flush any ICE candidates that arrived early
+            console.log('[WebRTC] Host set remote description, flushing ICE candidates...')
             await flushPendingIceCandidates()
+            console.log('[WebRTC] Host ready!')
           } catch (error) {
-            console.error('[WebRTC] Failed to set remote description:', error)
+            console.error('[WebRTC] Host failed to set remote description:', error)
           }
         }
       })
       unsubscribes.push(unsubAnswer)
     } else {
       // Guest waits for offer, then creates answer
+      console.log('[WebRTC] Guest waiting for offer...')
       const unsubOffer = onSnapshot(remoteSigDoc, async (snapshot) => {
         const data = snapshot.data()
+        console.log('[WebRTC] Guest received data:', data?.type, 'signalingState:', pc.signalingState)
         if (data?.type === 'offer' && pc.signalingState === 'stable') {
           try {
+            console.log('[WebRTC] Guest processing offer...')
             await pc.setRemoteDescription(new RTCSessionDescription({
               type: 'offer',
               sdp: data.sdp,
             }))
-            // Now flush any ICE candidates that arrived early
             await flushPendingIceCandidates()
             
+            console.log('[WebRTC] Guest creating answer...')
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
             
@@ -177,8 +259,9 @@ export async function createPeerConnection(
               sdp: answer.sdp,
               timestamp: Date.now(),
             })
+            console.log('[WebRTC] Guest sent answer!')
           } catch (error) {
-            console.error('[WebRTC] Failed to process offer:', error)
+            console.error('[WebRTC] Guest failed to process offer:', error)
           }
         }
       })
