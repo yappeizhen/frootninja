@@ -36,18 +36,32 @@ const buildIceServers = (): RTCConfiguration => {
         credential: turnCredential,
       })
     } else {
-      // Default to Metered.ca endpoints for best coverage
+      // Metered.ca endpoints - prioritize TCP/TLS for corporate firewalls
       iceServers.push(
         {
           urls: 'stun:stun.relay.metered.ca:80',
         },
+        // TLS on 443 - most likely to work on corporate networks
         {
-          urls: 'turn:global.relay.metered.ca:80',
+          urls: 'turns:global.relay.metered.ca:443?transport=tcp',
           username: turnUsername,
           credential: turnCredential,
         },
+        // TCP on 443
+        {
+          urls: 'turn:global.relay.metered.ca:443?transport=tcp',
+          username: turnUsername,
+          credential: turnCredential,
+        },
+        // TCP on 80
         {
           urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+          username: turnUsername,
+          credential: turnCredential,
+        },
+        // UDP as fallback
+        {
+          urls: 'turn:global.relay.metered.ca:80',
           username: turnUsername,
           credential: turnCredential,
         },
@@ -55,14 +69,10 @@ const buildIceServers = (): RTCConfiguration => {
           urls: 'turn:global.relay.metered.ca:443',
           username: turnUsername,
           credential: turnCredential,
-        },
-        {
-          urls: 'turns:global.relay.metered.ca:443?transport=tcp',
-          username: turnUsername,
-          credential: turnCredential,
         }
       )
     }
+    console.log('[WebRTC] TURN servers:', iceServers.filter(s => 'username' in s).map(s => s.urls))
     console.log('[WebRTC] TURN servers configured ✓')
   } else {
     console.log('[WebRTC] No TURN configured - STUN only (may fail on corporate/CGNAT networks)')
@@ -207,7 +217,11 @@ export async function createPeerConnection(
   console.log('[WebRTC] Will store ICE candidates at:', `rooms/${roomId}/signaling/${playerId}/iceCandidates`)
   pc.onicecandidate = async (event) => {
     if (event.candidate) {
-      console.log('[WebRTC] Local ICE candidate:', event.candidate.type, event.candidate.protocol, event.candidate.address)
+      const c = event.candidate
+      console.log('[WebRTC] Local ICE candidate:', c.type, c.protocol, c.address, c.relatedAddress ? `(relay via ${c.relatedAddress})` : '')
+      if (c.type === 'relay') {
+        console.log('[WebRTC] ✓ TURN relay candidate generated!')
+      }
       try {
         const candidateId = Date.now().toString()
         const candidateDoc = doc(iceCandidatesCol, candidateId)
