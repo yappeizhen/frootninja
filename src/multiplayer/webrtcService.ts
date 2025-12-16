@@ -170,12 +170,15 @@ export async function createPeerConnection(
   }
 
   // Handle ICE candidates
+  console.log('[WebRTC] Will store ICE candidates at:', `rooms/${roomId}/signaling/${playerId}/iceCandidates`)
   pc.onicecandidate = async (event) => {
     if (event.candidate) {
       console.log('[WebRTC] Local ICE candidate:', event.candidate.type, event.candidate.protocol, event.candidate.address)
       try {
-        const candidateDoc = doc(iceCandidatesCol, Date.now().toString())
+        const candidateId = Date.now().toString()
+        const candidateDoc = doc(iceCandidatesCol, candidateId)
         await setDoc(candidateDoc, event.candidate.toJSON())
+        console.log('[WebRTC] Stored ICE candidate:', candidateId)
       } catch (error) {
         console.error('[WebRTC] Failed to send ICE candidate:', error)
       }
@@ -190,16 +193,53 @@ export async function createPeerConnection(
   }
 
   // Listen for remote ICE candidates
+  const remoteIcePath = `rooms/${roomId}/signaling/${isHost ? 'guest' : 'host'}/iceCandidates`
+  console.log('[WebRTC] Setting up listener for remote ICE candidates at:', remoteIcePath)
+  
+  // Track which candidates we've already processed to avoid duplicates
+  const processedCandidates = new Set<string>()
+  
+  // Helper to process candidates from either listener or polling
+  const processCandidateDoc = (docId: string, candidateData: RTCIceCandidateInit) => {
+    if (processedCandidates.has(docId)) return
+    processedCandidates.add(docId)
+    console.log('[WebRTC] Processing remote ICE candidate:', docId, candidateData.candidate?.substring(0, 50))
+    addIceCandidate(candidateData)
+  }
+  
+  // Poll the collection directly as a fallback for listener issues
+  const pollRemoteCandidates = async () => {
+    try {
+      const { getDocs } = await import('firebase/firestore')
+      const snapshot = await getDocs(remoteIceCol)
+      console.log('[WebRTC] Polling remote ICE candidates:', snapshot.size, 'docs found,', processedCandidates.size, 'already processed')
+      snapshot.docs.forEach(doc => {
+        processCandidateDoc(doc.id, doc.data() as RTCIceCandidateInit)
+      })
+    } catch (e) {
+      console.error('[WebRTC] Failed to poll remote candidates:', e)
+    }
+  }
+  
+  // Poll periodically as fallback for real-time listener
+  const pollInterval = setInterval(pollRemoteCandidates, 1500)
+  setTimeout(() => clearInterval(pollInterval), 15000) // Stop polling after 15s
+  
+  // Also set up real-time listener
   const unsubIce = onSnapshot(remoteIceCol, (snapshot) => {
+    console.log('[WebRTC] Remote ICE snapshot received, docs:', snapshot.size, 'changes:', snapshot.docChanges().length)
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
         const candidateData = change.doc.data() as RTCIceCandidateInit
-        console.log('[WebRTC] Remote ICE candidate received:', candidateData.candidate?.substring(0, 50))
-        addIceCandidate(candidateData)
+        processCandidateDoc(change.doc.id, candidateData)
       }
     })
+  }, (error) => {
+    console.error('[WebRTC] Error listening for remote ICE candidates:', error)
   })
+  
   unsubscribes.push(unsubIce)
+  unsubscribes.push(() => clearInterval(pollInterval))
 
   try {
     if (isHost) {
