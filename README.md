@@ -4,15 +4,20 @@
 
 ### Slice fruits with your bare hands using computer vision
 
-[![Play Now](https://img.shields.io/badge/▶_Play_Now-frootninja.vercel.app-ff6b6b?style=for-the-badge&logo=vercel&logoColor=white)](https://frootninja.vercel.app/)
+<a href="https://frootninja.vercel.app/">
+  <picture>
+    <img src="https://img.shields.io/badge/🍉_PLAY_IN_BROWSER-22c55e?style=for-the-badge" alt="Play in Browser" height="36" />
+  </picture>
+</a>
 
-A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand tracking to detect slicing gestures in real-time. No controllers needed—just wave your hand to play.
+<sup><a href="https://frootninja.vercel.app/">frootninja.vercel.app</a> — works on desktop with webcam</sup>
+
+A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand tracking to detect slicing gestures in real-time. No controllers needed, just wave your hand to play.
 
 <br />
 
 <img width="600" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
 
-<sub>✨ Neon-drenched home screen with solo, versus, and online multiplayer modes</sub>
 
 <br /><br />
 
@@ -21,12 +26,12 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 <td align="center">
 <img width="400" alt="Solo gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
 <br />
-<sub><b>Solo Mode</b> — 60 seconds of fruit-slicing mayhem</sub>
+<sub><b>Solo Mode</b></sub>
 </td>
 <td align="center">
 <img width="400" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/c61f7a10-cb54-4cb5-967c-42289f110cc7" />
 <br />
-<sub><b>Online Multiplayer</b> — Head-to-head with live video</sub>
+<sub><b>Live Online Multiplayer</b></sub>
 </td>
 </tr>
 </table>
@@ -53,45 +58,52 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 
 ### 🎮 Game Modes
 
-- **Solo Mode** — Race against the clock! Score as many points as you can in 60 seconds
-- **Versus Mode** — Two-player local multiplayer using left hand (P1) vs right hand (P2)
-- **Online Multiplayer** — Head-to-head 30s matches with a friend via WebRTC
+- **Solo Mode** — 30 seconds to score as high as you can
+- **Online Multiplayer** — 30s head-to-head via WebRTC
 
 </td>
 <td width="50%">
 
-### 🍓 Slice Through 7 Fruits
+### 🍓 7 Sliceable Fruits
 
 🍓 Strawberry • 🍊 Orange • 🍎 Apple  
 🍉 Watermelon • 🍇 Grape • 🍋 Lemon • 🥝 Kiwi
 
-Each fruit is beautifully rendered in 3D with physically-based materials, subsurface scattering, and environment reflections.
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 💣 Bombs
+
+Watch out! Hitting a bomb costs you a life.
+
+</td>
+<td width="50%">
+
+### 🏆 Leaderboard
+
+Compete for the top spot on the global leaderboard.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🤝 Online Play
+
+Real-time multiplayer with seeded RNG for identical spawns. See your opponent's slices in real time.
+
+</td>
+<td width="50%">
+
+### 📊 Live Analytics Panel
+
+Speed/power meters, slice direction compass, combo counter, and hand tracking status.
 
 </td>
 </tr>
 </table>
-
-### 💣 Watch Out for Bombs!
-
-Hitting a bomb costs you points. Features a glowing fuse and realistic explosion effects.
-
-### 🎨 Visual Effects
-
-- **Realistic 3D fruit** with clearcoat materials and environment reflections
-- **Satisfying slice physics** — fruits split into halves that tumble away
-- **Juice particles** spray on every successful slice
-- **Smooth animations** with scale-in effects and dynamic lighting
-
-### 🤝 Online Play & Leaderboards
-
-- **Real-time multiplayer** using Firebase (signaling/state) + WebRTC (P2P video)
-- **Seeded RNG** keeps fruit spawns identical for both players
-- **Shared slice events** let you see the opponent's swipes
-- **Global leaderboard** backed by Firestore
-
-### 📊 Live Analytics Panel
-
-Track your performance in real-time with speed/power meters, slice direction compass, combo counter, and hand tracking status.
 
 ---
 
@@ -150,20 +162,6 @@ VITE_FIREBASE_APP_ID=your-app-id
 | `npm run format` | Format code with Prettier |
 
 ---
-
-## 🛠️ Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| [React 19](https://react.dev/) | UI framework |
-| [TypeScript](https://www.typescriptlang.org/) | Type safety |
-| [Vite](https://vite.dev/) | Build tool & dev server |
-| [Three.js](https://threejs.org/) | 3D graphics rendering |
-| [MediaPipe Tasks Vision](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) | Real-time hand tracking |
-| [Firebase Firestore](https://firebase.google.com/) | Multiplayer signaling & leaderboard |
-| [WebRTC](https://webrtc.org/) | Peer-to-peer video streaming |
-| [Zustand](https://zustand-demo.pmnd.rs/) | State management |
-| [Vitest](https://vitest.dev/) | Testing framework |
 
 ---
 
@@ -253,6 +251,22 @@ src/
 | 📏 **Proper distance** | Keep hands clearly visible in frame |
 | ⚡ **Fast swipes** | Quick, decisive movements trigger best |
 | ☝️ **Use index finger** | The game tracks your index fingertip |
+
+---
+
+## 🛠️ Built With
+
+<p>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" /></a>
+  <a href="https://developers.google.com/mediapipe"><img src="https://img.shields.io/badge/MediaPipe-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe" /></a>
+  <a href="https://firebase.google.com/"><img src="https://img.shields.io/badge/Firebase-F5820D?style=flat-square&logo=firebase&logoColor=white" alt="Firebase" /></a>
+  <a href="https://webrtc.org/"><img src="https://img.shields.io/badge/WebRTC-333333?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC" /></a>
+  <a href="https://zustand-demo.pmnd.rs/"><img src="https://img.shields.io/badge/Zustand-443E38?style=flat-square&logo=react&logoColor=white" alt="Zustand" /></a>
+  <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" /></a>
+</p>
 
 ---
 
