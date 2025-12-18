@@ -6,6 +6,11 @@
   background-color: #050608;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Prevent text inflation on mobile */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 *,
@@ -14,12 +19,35 @@
   box-sizing: border-box;
 }
 
+/* Reset margins and paddings */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport for mobile browsers */
   background-color: #050608;
+  overflow-x: hidden;
+  overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Prevent iOS Safari from zooming on input focus */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Improve touch scrolling */
+@supports (-webkit-overflow-scrolling: touch) {
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
 }

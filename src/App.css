@@ -1870,6 +1870,26 @@ h1, h2, h3 {
 }
 
 /* =====================================================
+   SAFE AREA SUPPORT FOR NOTCHED DEVICES
+   ===================================================== */
+
+@supports (padding: env(safe-area-inset-top)) {
+  .app-shell {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .app-header {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+  
+  .app-footer {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* =====================================================
    MOBILE RESPONSIVE - TABLET (< 900px)
    ===================================================== */
 
@@ -1902,9 +1922,23 @@ h1, h2, h3 {
    ===================================================== */
 
 @media (max-width: 768px) {
+  /* Base adjustments */
+  body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .app-shell {
+    height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+    min-height: 100dvh;
+  }
+  
   .multiplayer-gameover {
     padding: 2rem 1.75rem;
   }
+  
   /* Remove side panel padding adjustments on mobile */
   .app-main {
     padding: 0.5rem;
@@ -1933,24 +1967,24 @@ h1, h2, h3 {
     font-size: 0.55rem;
   }
   
-  /* Side panel becomes full-height drawer on mobile */
+  /* Side panel as full overlay drawer on mobile */
   .side-panel {
-    width: 280px;
+    width: min(85vw, 320px);
   }
   
   .side-panel--closed {
-    transform: translateX(280px);
+    transform: translateX(100%);
   }
   
   .side-panel--open {
     transform: translateX(0);
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
   }
   
   .side-panel__content {
     padding: 1rem;
     gap: 0.75rem;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     overflow-y: auto;
   }
   
@@ -1963,9 +1997,10 @@ h1, h2, h3 {
   }
   
   .stats-grid {
-    flex: 1;
-    min-width: 140px;
-    gap: 0.35rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    gap: 0.5rem;
   }
   
   .stat-card {
@@ -1985,8 +2020,7 @@ h1, h2, h3 {
   .direction-section,
   .timestamp-badge,
   .empty-state {
-    flex: 1;
-    min-width: 120px;
+    width: 100%;
   }
   
   .direction-indicator {
@@ -2014,11 +2048,14 @@ h1, h2, h3 {
   /* Playfield adjustments */
   .playfield-stage {
     border-radius: 0.5rem;
+    aspect-ratio: auto;
+    max-height: calc(100dvh - 120px);
+    height: 100%;
   }
   
   .game-menu-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     font-size: 0.95rem;
     bottom: 0.5rem;
     left: 0.5rem;
@@ -2032,6 +2069,7 @@ h1, h2, h3 {
   /* HUD adjustments */
   .game-hud {
     padding: 0.5rem;
+    gap: 0.25rem;
   }
   
   .hud-timer {
@@ -2066,6 +2104,7 @@ h1, h2, h3 {
   
   .hud-lives__heart {
     font-size: 0.85rem;
+    display: inline-block;
   }
   
   .hud-highscore {
@@ -2084,33 +2123,33 @@ h1, h2, h3 {
   
   /* Game screen adjustments */
   .game-screen-overlay {
-    padding: 0.5rem;
-    align-items: flex-start;
-    justify-content: flex-start;
+    padding: 0.75rem;
+    align-items: center;
+    justify-content: center;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
   
   .game-screen {
-    padding: 1rem 1.25rem;
+    padding: 1.25rem 1.5rem;
     max-width: 100%;
     width: 100%;
-    margin: auto;
+    max-height: 100%;
   }
   
   .game-screen__icon {
-    font-size: 2rem;
-    margin-bottom: 0.35rem;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
   }
   
   .game-screen__title {
-    font-size: 1.35rem;
-    margin-bottom: 0.35rem;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
   }
   
   .game-screen__subtitle {
-    font-size: 0.75rem;
-    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
     line-height: 1.4;
   }
   
@@ -2135,62 +2174,59 @@ h1, h2, h3 {
     transform: none;
   }
   
-  .hud-lives__heart {
-    display: inline-block;
-  }
-  
   .game-screen__stats {
-    gap: 1.25rem;
-    padding: 0.75rem 1rem;
+    gap: 1.5rem;
+    padding: 0.75rem 1.25rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .game-screen__stat-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
   
   .game-screen__stat-label {
-    font-size: 0.55rem;
+    font-size: 0.6rem;
   }
   
   .game-screen__modes {
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
     width: 100%;
-  }
-  
-  .game-screen__modes {
     justify-content: center;
+    flex-wrap: wrap;
   }
   
   .game-mode-btn {
     flex: 0 0 auto;
-    min-width: 120px;
-    padding: 0.75rem 1.25rem;
+    min-width: 100px;
+    padding: 0.75rem 1rem;
     min-height: 0;
   }
   
   .game-mode-btn__icon {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
   }
   
   .game-mode-btn__label {
     display: block;
+    font-size: 0.6rem;
   }
   
   .game-btn {
-    padding: 0.5rem 1.25rem;
-    font-size: 0.65rem;
-    min-height: 38px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.7rem;
+    min-height: 44px;
   }
   
   .game-screen__hint {
-    font-size: 0.65rem;
-    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    margin-top: 0.75rem;
   }
   
   .game-screen__highscore {
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
   }
   
   .game-screen__actions {
@@ -2203,8 +2239,9 @@ h1, h2, h3 {
   }
   
   .icon-btn {
-    padding: 0.5rem 0.6rem;
-    min-width: 50px;
+    padding: 0.6rem 0.75rem;
+    min-width: 56px;
+    min-height: 44px;
   }
   
   .icon-btn__icon {
@@ -2216,12 +2253,12 @@ h1, h2, h3 {
   }
   
   .game-screen__new-record {
-    padding: 0.4rem 0.75rem;
+    padding: 0.5rem 1rem;
     margin-bottom: 1rem;
   }
   
   .game-screen__new-record span {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
   }
   
   /* Player scores (multiplayer) */
@@ -2235,7 +2272,7 @@ h1, h2, h3 {
   }
   
   .player-score__name {
-    font-size: 0.55rem;
+    font-size: 0.6rem;
   }
   
   .player-score__value {
@@ -2248,16 +2285,19 @@ h1, h2, h3 {
   
   /* Versus game over */
   .game-screen__versus-stats {
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .versus-stat {
     padding: 0.75rem 1rem;
+    min-width: 100px;
   }
   
   .versus-stat__label {
-    font-size: 0.55rem;
+    font-size: 0.6rem;
   }
   
   .versus-stat__score {
@@ -2265,7 +2305,7 @@ h1, h2, h3 {
   }
   
   .versus-stat__vs {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
 }
 
@@ -2277,6 +2317,7 @@ h1, h2, h3 {
   .multiplayer-gameover {
     padding: 1.5rem 1.25rem;
   }
+  
   .app-header {
     padding: 0.4rem 0.5rem;
   }
@@ -2286,8 +2327,10 @@ h1, h2, h3 {
   }
   
   .app-header__menu-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .hamburger {
@@ -2301,6 +2344,10 @@ h1, h2, h3 {
   
   .app-footer__text {
     font-size: 0.5rem;
+  }
+  
+  .side-panel {
+    width: 100%;
   }
   
   .side-panel__content {
@@ -2326,29 +2373,314 @@ h1, h2, h3 {
   }
   
   .game-menu-btn {
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 0.85rem;
     bottom: 0.35rem;
     left: 0.35rem;
   }
   
-  /* Game HUD ultra compact */
+  /* Game HUD compact */
   .game-hud {
-    padding: 0.35rem;
+    padding: 0.4rem;
   }
   
   .hud-timer {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
   }
   
   .hud-timer__value {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
   
   .hud-score {
+    padding: 0.3rem 0.5rem;
+  }
+  
+  .hud-score__label {
+    font-size: 0.5rem;
+  }
+  
+  .hud-score__value {
+    font-size: 1.1rem;
+  }
+  
+  .hud-score__combo {
+    font-size: 0.65rem;
+  }
+  
+  .hud-lives {
+    padding: 0.3rem 0.4rem;
+    gap: 0.15rem;
+  }
+  
+  .hud-lives__heart {
+    font-size: 0.75rem;
+  }
+  
+  .hud-highscore {
+    top: 2.75rem;
+    right: 0.4rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .hud-highscore__label {
+    font-size: 0.5rem;
+  }
+  
+  .hud-highscore__value {
+    font-size: 0.7rem;
+  }
+  
+  /* Game screens compact */
+  .game-screen-overlay {
+    padding: 0.5rem;
+  }
+  
+  .game-screen {
+    padding: 1rem 1.25rem;
+    max-width: 100%;
+  }
+  
+  .game-screen__icon {
+    font-size: 2rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .game-screen__title {
+    font-size: 1.25rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .game-screen__subtitle {
+    font-size: 0.7rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  .game-screen__stats {
+    gap: 1rem;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .game-screen__stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .game-screen__stat-label {
+    font-size: 0.55rem;
+  }
+  
+  .game-screen__modes {
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .game-mode-btn {
+    flex: 0 0 auto;
+    min-width: 70px;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .game-mode-btn__icon {
+    font-size: 1.25rem;
+  }
+
+  .game-mode-btn__label {
+    font-size: 0.5rem;
+    display: block;
+  }
+  
+  .game-btn {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.65rem;
+    min-height: 44px;
+  }
+  
+  .game-screen__actions {
+    gap: 0.5rem;
+  }
+  
+  .game-screen__secondary-actions {
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .icon-btn {
+    padding: 0.5rem 0.6rem;
+    min-width: 48px;
+    min-height: 44px;
+  }
+  
+  .icon-btn__icon {
+    font-size: 1rem;
+  }
+  
+  .icon-btn__label {
+    font-size: 0.5rem;
+  }
+  
+  .game-screen__highscore {
+    margin-top: 0.5rem;
+  }
+  
+  .game-screen__highscore-label {
+    font-size: 0.5rem;
+  }
+  
+  .game-screen__highscore-value {
+    font-size: 0.85rem;
+  }
+  
+  .game-screen__hint {
+    font-size: 0.65rem;
+    margin-top: 0.5rem;
+  }
+  
+  .game-screen__new-record {
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .game-screen__new-record span {
+    font-size: 0.6rem;
+  }
+  
+  /* Player scores compact */
+  .player-score {
+    padding: 0.4rem 0.5rem;
+  }
+  
+  .player-score__name {
+    font-size: 0.55rem;
+  }
+  
+  .player-score__value {
+    font-size: 1.35rem;
+  }
+  
+  /* Versus stats compact */
+  .versus-stat {
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .versus-stat__score {
+    font-size: 1.35rem;
+  }
+  
+  /* Banner adjustments */
+  .playfield-banner {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .playfield-banner button {
+    padding: 0.4rem 1rem;
+    font-size: 0.65rem;
+    min-height: 36px;
+  }
+}
+
+/* =====================================================
+   LANDSCAPE MODE - MOBILE (height < 500px or orientation landscape)
+   ===================================================== */
+
+/* Target phones in landscape using max-height */
+@media (max-height: 500px), (max-width: 900px) and (orientation: landscape) {
+  /* Use all available space */
+  .app-shell {
+    height: 100dvh;
+  }
+  
+  /* Minimal header in landscape */
+  .app-header {
+    padding: 0.25rem 0.75rem;
+  }
+  
+  .app-header__title {
+    font-size: 0.85rem;
+  }
+  
+  .app-header__menu-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  
+  /* Hide footer in landscape to maximize game space */
+  .app-footer {
+    display: none;
+  }
+  
+  /* Full width main area - hide side panel by default */
+  .app-main {
+    padding: 0.25rem;
+  }
+  
+  .app-main--panel-closed {
+    padding-right: 0.25rem;
+  }
+  
+  /* Side panel as full overlay in landscape */
+  .side-panel {
+    width: min(60vw, 280px);
+    background: rgba(12, 12, 18, 0.98);
+  }
+  
+  .side-panel--closed {
+    transform: translateX(100%);
+  }
+  
+  .side-panel__content {
+    padding: 0.75rem;
+    gap: 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  /* Playfield optimized for landscape */
+  .playfield-stage {
+    border-radius: 0.35rem;
+    aspect-ratio: auto;
+    max-height: calc(100dvh - 50px);
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Ultra compact HUD for landscape */
+  .game-hud {
     padding: 0.25rem 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .hud-timer {
+    width: 38px;
+    height: 38px;
+  }
+  
+  .hud-timer__value {
+    font-size: 0.65rem;
+  }
+  
+  .hud-score {
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
   }
   
   .hud-score__label {
@@ -2360,152 +2692,189 @@ h1, h2, h3 {
   }
   
   .hud-score__combo {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
   }
   
   .hud-lives {
-    padding: 0.25rem 0.4rem;
-    gap: 0.15rem;
+    padding: 0.2rem 0.35rem;
+    gap: 0.1rem;
   }
   
   .hud-lives__heart {
-    font-size: 0.7rem;
-  }
-  
-  .hud-highscore {
-    top: 2.75rem;
-    right: 0.35rem;
-    padding: 0.2rem 0.4rem;
-  }
-  
-  .hud-highscore__label {
-    font-size: 0.45rem;
-  }
-  
-  .hud-highscore__value {
     font-size: 0.65rem;
   }
   
-  /* Game screens ultra compact */
+  .hud-highscore {
+    display: none; /* Hide high score in landscape to save space */
+  }
+  
+  /* Game menu button smaller in landscape */
+  .game-menu-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 0.75rem;
+    bottom: 0.25rem;
+    left: 0.25rem;
+  }
+  
+  /* Game screens - horizontal layout in landscape */
   .game-screen-overlay {
-    padding: 0.35rem;
+    padding: 0.5rem;
+    align-items: center;
+    justify-content: center;
   }
   
   .game-screen {
-    padding: 0.75rem 1rem;
-    max-width: 100%;
+    padding: 0.75rem 1.5rem;
+    max-width: 95%;
+    max-height: 100%;
+    flex-direction: column;
+    overflow-y: auto;
   }
   
   .game-screen__icon {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     margin-bottom: 0.25rem;
   }
   
   .game-screen__title {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 0.25rem;
   }
   
   .game-screen__subtitle {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     margin-bottom: 0.5rem;
     line-height: 1.3;
   }
   
+  /* Horizontal stats layout in landscape */
   .game-screen__stats {
-    gap: 0.75rem;
-    padding: 0.4rem 0.6rem;
+    flex-direction: row;
+    gap: 1.5rem;
+    padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
   }
   
   .game-screen__stat-value {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
   }
   
   .game-screen__stat-label {
     font-size: 0.5rem;
   }
   
+  /* Horizontal mode buttons in landscape */
   .game-screen__modes {
     flex-direction: row;
-    justify-content: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
     margin-bottom: 0.5rem;
   }
   
   .game-mode-btn {
-    flex: 0 0 auto;
-    min-width: 56px;
-    flex-direction: column;
-    gap: 0;
-    padding: 0.6rem 0.85rem;
+    min-width: 60px;
+    padding: 0.5rem 0.75rem;
+    gap: 0.15rem;
   }
   
   .game-mode-btn__icon {
-    font-size: 1.25rem;
-  }
-
-  .game-mode-btn__label {
-    display: none;
+    font-size: 1rem;
   }
   
+  .game-mode-btn__label {
+    font-size: 0.45rem;
+    display: block;
+  }
+  
+  /* Compact buttons in landscape */
   .game-btn {
     padding: 0.5rem 1.25rem;
-    font-size: 0.65rem;
-    min-height: 40px;
+    font-size: 0.6rem;
+    min-height: 36px;
   }
   
   .game-screen__actions {
-    gap: 0.35rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .game-screen__actions .game-btn {
+    flex: 0 1 auto;
+    min-width: 120px;
   }
   
   .game-screen__secondary-actions {
     gap: 0.35rem;
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
   }
   
   .icon-btn {
-    padding: 0.4rem 0.5rem;
-    min-width: 45px;
+    padding: 0.35rem 0.5rem;
+    min-width: 40px;
+    min-height: 32px;
   }
   
   .icon-btn__icon {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
   
   .icon-btn__label {
-    font-size: 0.45rem;
-  }
-  
-  .game-screen__highscore {
-    margin-top: 0.5rem;
-  }
-  
-  .game-screen__highscore-label {
-    font-size: 0.45rem;
-  }
-  
-  .game-screen__highscore-value {
-    font-size: 0.8rem;
+    font-size: 0.4rem;
   }
   
   .game-screen__hint {
-    font-size: 0.6rem;
-    margin-top: 0.5rem;
+    font-size: 0.55rem;
+    margin-top: 0.35rem;
+  }
+  
+  .game-screen__highscore {
+    display: none; /* Hide in landscape to save space */
   }
   
   .game-screen__new-record {
-    padding: 0.3rem 0.6rem;
-    margin-bottom: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    margin-bottom: 0.35rem;
   }
   
   .game-screen__new-record span {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
   }
   
-  /* Player scores compact */
+  /* Banner compact in landscape */
+  .playfield-banner {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
+    gap: 0.35rem;
+    bottom: 0.35rem;
+    left: 0.35rem;
+    right: 0.35rem;
+  }
+  
+  .playfield-banner button {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.6rem;
+    min-height: 32px;
+  }
+  
+  .playfield-status-pill {
+    font-size: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    top: 0.35rem;
+    right: 0.35rem;
+  }
+  
+  /* Player scores compact in landscape */
+  .player-scores {
+    padding: 0.35rem;
+  }
+  
   .player-score {
-    padding: 0.35rem 0.5rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.5rem;
   }
   
   .player-score__name {
@@ -2513,68 +2882,145 @@ h1, h2, h3 {
   }
   
   .player-score__value {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   
-  /* Versus stats compact */
+  .player-score__combo {
+    font-size: 0.55rem;
+  }
+  
+  /* Versus stats compact in landscape */
+  .game-screen__versus-stats {
+    flex-direction: row;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
   .versus-stat {
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
+    min-width: 80px;
+  }
+  
+  .versus-stat__label {
+    font-size: 0.5rem;
   }
   
   .versus-stat__score {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
   }
   
-  /* Banner adjustments */
-  .playfield-banner {
-    left: 0.5rem;
-    right: 0.5rem;
-    bottom: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    gap: 0.5rem;
-  }
-  
-  .playfield-banner button {
-    padding: 0.35rem 1rem;
-    font-size: 0.65rem;
+  .versus-stat__vs {
+    font-size: 0.7rem;
   }
 }
 
 /* =====================================================
-   LANDSCAPE MOBILE ADJUSTMENTS
+   LANDSCAPE MODE - VERY SHORT SCREENS (height < 400px)
    ===================================================== */
 
-@media (max-width: 768px) and (orientation: landscape) {
-  /* Compact header/footer in landscape */
+@media (max-height: 400px) {
   .app-header {
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .app-header__title {
+    font-size: 0.75rem;
+  }
+  
+  .app-header__menu-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .game-hud {
+    padding: 0.15rem 0.35rem;
+  }
+  
+  .hud-timer {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .hud-timer__value {
+    font-size: 0.55rem;
+  }
+  
+  .hud-score {
+    padding: 0.15rem 0.35rem;
+  }
+  
+  .hud-score__label {
+    display: none;
+  }
+  
+  .hud-score__value {
+    font-size: 0.85rem;
+  }
+  
+  .hud-lives__heart {
+    font-size: 0.55rem;
+  }
+  
+  .game-screen {
+    padding: 0.5rem 1rem;
+  }
+  
+  .game-screen__icon {
+    font-size: 1.25rem;
+    margin-bottom: 0.15rem;
+  }
+  
+  .game-screen__title {
+    font-size: 1rem;
+    margin-bottom: 0.15rem;
+  }
+  
+  .game-screen__subtitle {
+    font-size: 0.6rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .game-screen__stats {
     padding: 0.35rem 0.75rem;
+    gap: 1rem;
+    margin-bottom: 0.35rem;
   }
   
-  .app-footer {
-    padding: 0.25rem 0.75rem;
+  .game-screen__stat-value {
+    font-size: 1.1rem;
   }
   
-  /* Narrower side panel in landscape */
-  .side-panel {
-    width: 200px;
+  .game-screen__modes {
+    margin-bottom: 0.35rem;
+    gap: 0.35rem;
   }
   
-  .side-panel--closed {
-    transform: translateX(200px);
+  .game-mode-btn {
+    padding: 0.35rem 0.5rem;
+    min-width: 50px;
   }
   
-  .app-main {
-    padding-right: calc(200px + 0.5rem);
+  .game-mode-btn__icon {
+    font-size: 0.9rem;
   }
   
-  .app-main--panel-closed {
-    padding-right: calc(40px + 0.5rem);
+  .game-mode-btn__label {
+    display: none;
   }
   
-  /* Make playfield take more vertical space in landscape */
-  .playfield-stage {
-    aspect-ratio: 16 / 10;
+  .game-btn {
+    padding: 0.35rem 1rem;
+    font-size: 0.55rem;
+    min-height: 30px;
+  }
+  
+  .game-screen__new-record {
+    padding: 0.2rem 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .game-screen__hint {
+    display: none;
   }
 }
 
@@ -2583,9 +3029,10 @@ h1, h2, h3 {
    ===================================================== */
 
 @media (hover: none) and (pointer: coarse) {
-  /* Larger touch targets */
+  /* Ensure minimum touch targets (44x44px recommended by Apple/Google) */
   .game-btn {
     min-height: 48px;
+    min-width: 48px;
   }
   
   .game-mode-btn {
@@ -2597,15 +3044,73 @@ h1, h2, h3 {
     min-height: 44px;
   }
   
-  .playfield-banner button {
-    min-height: 40px;
+  .side-panel__close {
+    min-width: 44px;
+    min-height: 44px;
   }
   
-  /* Remove hover states that don't apply */
+  .playfield-banner button {
+    min-height: 44px;
+  }
+  
+  .icon-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .leaderboard__close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .leaderboard__tab {
+    min-height: 44px;
+  }
+  
+  .waiting-room__copy-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .game-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .game-screen__rankings-btn {
+    min-height: 44px;
+  }
+  
+  .multiplayer-menu__option {
+    min-height: 60px;
+  }
+  
+  /* Remove hover states that don't apply on touch */
   .game-btn:hover,
   .game-mode-btn:hover,
-  .stat-card:hover {
+  .stat-card:hover,
+  .icon-btn:hover,
+  .playfield-banner button:hover,
+  .leaderboard__entry:hover,
+  .side-panel__close:hover,
+  .side-panel__leaderboard-btn:hover {
     transform: none;
+  }
+  
+  /* Improve touch scrolling */
+  .side-panel__content,
+  .leaderboard__content,
+  .game-screen-overlay {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Better tap feedback */
+  .game-btn:active,
+  .game-mode-btn:active,
+  .icon-btn:active {
+    transform: scale(0.97);
+    opacity: 0.9;
   }
 }
 
@@ -3297,7 +3802,8 @@ h1, h2, h3 {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .leaderboard {
-    max-height: 70vh;
+    max-height: 80vh;
+    border-radius: 16px;
   }
   
   .leaderboard__header {
@@ -3326,16 +3832,125 @@ h1, h2, h3 {
   }
   
   .username-prompt__icon {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
   
   .username-prompt__title {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+  }
+  
+  .username-prompt__subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .username-prompt__form {
+    max-width: 100%;
+  }
+  
+  .username-prompt__input {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+}
+
+/* Leaderboard landscape */
+@media (max-height: 500px), (max-width: 900px) and (orientation: landscape) {
+  .leaderboard-overlay {
+    padding: 0.5rem;
+  }
+  
+  .leaderboard {
+    max-height: 95vh;
+    height: auto;
+    max-width: 500px;
+    border-radius: 12px;
+  }
+  
+  .leaderboard__header {
+    padding: 0.75rem 1rem;
+  }
+  
+  .leaderboard__title {
+    font-size: 1rem;
+  }
+  
+  .leaderboard__tabs {
+    overflow-x: auto;
+  }
+  
+  .leaderboard__tab {
+    padding: 0.6rem 1rem;
+  }
+  
+  .leaderboard__tab-icon {
+    font-size: 0.85rem;
+  }
+  
+  .leaderboard__tab-label {
+    font-size: 0.75rem;
+  }
+  
+  .leaderboard__content {
+    max-height: 50vh;
+  }
+  
+  .leaderboard__entry {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .leaderboard__rank {
+    width: 28px;
+    font-size: 0.7rem;
+  }
+  
+  .leaderboard__username {
+    font-size: 0.8rem;
+  }
+  
+  .leaderboard__score {
+    font-size: 0.85rem;
+  }
+  
+  .leaderboard__footer {
+    padding: 0.75rem 1rem;
+  }
+  
+  .username-prompt {
+    padding: 1rem;
+  }
+  
+  .username-prompt__icon {
+    font-size: 2rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .username-prompt__title {
+    font-size: 1.1rem;
+  }
+  
+  .username-prompt__subtitle {
+    font-size: 0.7rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .username-prompt__form {
+    max-width: 250px;
+    gap: 0.5rem;
   }
   
   .username-prompt__input {
     padding: 0.6rem 0.8rem;
     font-size: 0.9rem;
+  }
+  
+  .username-prompt__actions {
+    gap: 0.35rem;
+  }
+  
+  .username-prompt__actions .game-btn {
+    min-height: 36px;
+    padding: 0.5rem 1rem;
+    font-size: 0.6rem;
   }
 }
 
@@ -4096,6 +4711,264 @@ h1, h2, h3 {
   }
 }
 
+/* Multiplayer mobile responsive */
+@media (max-width: 768px) {
+  .multiplayer-menu__options {
+    max-width: 100%;
+    gap: 0.75rem;
+  }
+  
+  .multiplayer-menu__option {
+    padding: 1rem 1.25rem;
+  }
+  
+  .multiplayer-menu__option-icon {
+    font-size: 1.75rem;
+  }
+  
+  .multiplayer-menu__option-title {
+    font-size: 1rem;
+  }
+  
+  .multiplayer-menu__option-desc {
+    font-size: 0.75rem;
+  }
+  
+  .multiplayer-menu__code-input {
+    width: 140px;
+    padding: 0.75rem;
+    font-size: 1.75rem;
+    letter-spacing: 0.4rem;
+  }
+  
+  .waiting-room__code-display {
+    margin-bottom: 1.5rem;
+  }
+  
+  .waiting-room__code {
+    font-size: 1.75rem;
+    letter-spacing: 0.3rem;
+  }
+  
+  .waiting-room__players {
+    max-width: 100%;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .waiting-room__player {
+    padding: 0.75rem 1rem;
+  }
+  
+  .waiting-room__countdown {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+  }
+  
+  .waiting-room__countdown-number {
+    font-size: 3rem;
+  }
+  
+  .multiplayer-hud {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .multiplayer-hud__name {
+    font-size: 0.65rem;
+  }
+  
+  .multiplayer-hud__score {
+    font-size: 1.1rem;
+  }
+  
+  .multiplayer-hud__combo {
+    font-size: 0.8rem;
+  }
+  
+  .multiplayer-hud__timer-value {
+    font-size: 1.1rem;
+  }
+  
+  .multiplayer-playfield__opponent-game {
+    width: 30%;
+    max-width: 150px;
+    bottom: 4rem;
+    right: 0.5rem;
+    border-radius: 0.75rem;
+  }
+  
+  .multiplayer-playfield__label {
+    font-size: 0.6rem;
+    padding: 0.35rem 1rem;
+    bottom: 0.5rem;
+  }
+  
+  .multiplayer-countdown {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .multiplayer-countdown__number {
+    font-size: 3rem;
+  }
+  
+  .multiplayer-countdown__text {
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+  }
+}
+
+/* Multiplayer landscape responsive */
+@media (max-height: 500px), (max-width: 900px) and (orientation: landscape) {
+  .multiplayer-menu__options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    max-width: 100%;
+  }
+  
+  .multiplayer-menu__option {
+    flex: 0 1 45%;
+    padding: 0.75rem 1rem;
+  }
+  
+  .multiplayer-menu__option-icon {
+    font-size: 1.5rem;
+  }
+  
+  .multiplayer-menu__option-title {
+    font-size: 0.9rem;
+  }
+  
+  .multiplayer-menu__option-desc {
+    font-size: 0.65rem;
+  }
+  
+  .multiplayer-menu__code-input {
+    width: 120px;
+    padding: 0.5rem;
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+  }
+  
+  .waiting-room__code-display {
+    margin-bottom: 1rem;
+  }
+  
+  .waiting-room__code-box {
+    padding: 0.5rem 1rem;
+  }
+  
+  .waiting-room__code {
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+  }
+  
+  .waiting-room__players {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .waiting-room__player {
+    flex: 0 1 45%;
+    padding: 0.6rem 0.75rem;
+  }
+  
+  .waiting-room__countdown {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .waiting-room__countdown-number {
+    font-size: 2.5rem;
+  }
+  
+  .waiting-room__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  
+  .waiting-room__actions .game-btn {
+    flex: 0 1 auto;
+    min-width: 120px;
+  }
+  
+  .multiplayer-hud {
+    padding: 0.35rem 0.5rem;
+    gap: 0.35rem;
+  }
+  
+  .multiplayer-hud__timer {
+    width: auto;
+    order: 0;
+    margin-bottom: 0;
+  }
+  
+  .multiplayer-hud__name {
+    font-size: 0.55rem;
+  }
+  
+  .multiplayer-hud__score {
+    font-size: 1rem;
+  }
+  
+  .multiplayer-hud__combo {
+    font-size: 0.7rem;
+  }
+  
+  .multiplayer-hud__timer {
+    padding: 0.25rem 0.75rem;
+  }
+  
+  .multiplayer-hud__timer-value {
+    font-size: 1rem;
+  }
+  
+  .multiplayer-playfield__games {
+    padding-top: 40px;
+  }
+  
+  .multiplayer-playfield__opponent-game {
+    width: 25%;
+    max-width: 120px;
+    bottom: 3rem;
+    right: 0.5rem;
+  }
+  
+  .multiplayer-playfield__label {
+    font-size: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    bottom: 0.35rem;
+  }
+  
+  .multiplayer-countdown-overlay {
+    padding: 1rem;
+  }
+  
+  .multiplayer-countdown {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .multiplayer-countdown__number {
+    font-size: 2.5rem;
+  }
+  
+  .multiplayer-countdown__text {
+    font-size: 0.85rem;
+  }
+}
+
 /* ============================================
    MULTIPLAYER GAME OVER - CELEBRATION REVAMP
    ============================================ */
@@ -4494,7 +5367,7 @@ h1, h2, h3 {
 
 @media (max-width: 768px) {
   .multiplayer-gameover__icon {
-    font-size: 4rem;
+    font-size: 3.5rem;
   }
   
   .multiplayer-gameover__title {
@@ -4517,11 +5390,32 @@ h1, h2, h3 {
   .confetti-particle {
     --confetti-size: 6px;
   }
+  
+  .multiplayer-gameover__stats {
+    gap: 1rem;
+  }
+  
+  .multiplayer-gameover__player {
+    padding: 1rem 1.5rem;
+    min-width: 120px;
+  }
+  
+  .multiplayer-gameover__player-score {
+    font-size: 2rem;
+  }
+  
+  .multiplayer-gameover__actions {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
+  .multiplayer-gameover {
+    padding: 1.5rem 1.25rem;
+  }
+  
   .multiplayer-gameover__icon {
-    font-size: 3rem;
+    font-size: 2.75rem;
   }
   
   .multiplayer-gameover__title {
@@ -4534,7 +5428,113 @@ h1, h2, h3 {
     letter-spacing: 0.1em;
   }
   
+  .multiplayer-gameover__stats {
+    gap: 0.75rem;
+  }
+  
+  .multiplayer-gameover__player {
+    padding: 0.75rem 1rem;
+    min-width: 100px;
+    width: 100%;
+  }
+  
+  .multiplayer-gameover__player-label {
+    font-size: 0.6rem;
+  }
+  
+  .multiplayer-gameover__player-score {
+    font-size: 1.75rem;
+  }
+  
   .multiplayer-gameover__actions {
-    max-width: 280px;
+    max-width: 100%;
+    gap: 0.5rem;
+  }
+  
+  .multiplayer-gameover__vs {
+    font-size: 1rem;
+  }
+}
+
+/* Multiplayer gameover landscape */
+@media (max-height: 500px), (max-width: 900px) and (orientation: landscape) {
+  .multiplayer-gameover {
+    padding: 1rem 1.5rem;
+    max-height: 95vh;
+    overflow-y: auto;
+  }
+  
+  .multiplayer-gameover__icon-wrapper {
+    margin-bottom: 0.25rem;
+  }
+  
+  .multiplayer-gameover__icon {
+    font-size: 2.5rem;
+  }
+  
+  .multiplayer-gameover__title-wrapper {
+    margin-bottom: 0.75rem;
+  }
+  
+  .multiplayer-gameover__title {
+    font-size: 1.35rem;
+  }
+  
+  .multiplayer-gameover__subtitle {
+    font-size: 0.65rem;
+    margin-top: 0.15rem;
+  }
+  
+  .multiplayer-gameover__stats {
+    flex-direction: row;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .multiplayer-gameover__player {
+    padding: 0.6rem 1rem;
+    min-width: 90px;
+  }
+  
+  .multiplayer-gameover__player-label {
+    font-size: 0.55rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .multiplayer-gameover__player-score {
+    font-size: 1.5rem;
+  }
+  
+  .multiplayer-gameover__player-combo {
+    font-size: 0.65rem;
+  }
+  
+  .multiplayer-gameover__vs {
+    font-size: 0.9rem;
+  }
+  
+  .multiplayer-gameover__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+    gap: 0.5rem;
+  }
+  
+  .multiplayer-gameover__actions .game-btn {
+    flex: 0 1 auto;
+    min-width: 100px;
+    padding: 0.5rem 1rem;
+    font-size: 0.6rem;
+    min-height: 36px;
+  }
+  
+  .sparkles-container {
+    inset: -15px;
+  }
+  
+  .sparkle {
+    width: 5px;
+    height: 5px;
   }
 }
