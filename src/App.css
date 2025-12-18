@@ -163,6 +163,29 @@ h1, h2, h3 {
   gap: 0.4rem;
 }
 
+.app-header__title--clickable {
+  border: none;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.app-header__title--clickable:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.app-header__title--clickable:active {
+  transform: scale(0.98);
+}
+
+.app-header__title--clickable:focus-visible {
+  outline: 2px solid var(--pastel-lavender);
+  outline-offset: 4px;
+}
+
 .app-header__icon {
   font-size: 1.2rem;
   -webkit-text-fill-color: initial;

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 import { GestureDebugPanel, Playfield } from '@/ui/components'
 import { useMultiplayerStore } from '@/state/multiplayerStore'
+import { useGameStore } from '@/state/gameStore'
 import { MultiplayerPlayfield } from '@/ui/components/MultiplayerPlayfield'
 
 const useIsMobile = () => {
@@ -25,6 +26,7 @@ export const App = () => {
     typeof window !== 'undefined' ? !window.matchMedia('(max-width: 768px)').matches : true
   )
   const { roomId, roomState, reset: resetMultiplayer } = useMultiplayerStore()
+  const resetGame = useGameStore((state) => state.reset)
   
   // Check if multiplayer game is active (includes waiting to establish WebRTC early)
   const isMultiplayerActive = roomId && (roomState === 'waiting' || roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
@@ -40,16 +42,27 @@ export const App = () => {
     resetMultiplayer()
   }
 
+  // Navigate to home screen (reset all game state)
+  const handleGoHome = useCallback(() => {
+    resetGame()
+    resetMultiplayer()
+  }, [resetGame, resetMultiplayer])
+
   // Render multiplayer playfield when active (full screen, no debug panel)
   if (isMultiplayerActive) {
     return (
       <div className="app-shell app-shell--multiplayer">
         {/* Header */}
         <header className="app-header">
-          <h1 className="app-header__title">
+          <button 
+            className="app-header__title app-header__title--clickable"
+            onClick={handleGoHome}
+            type="button"
+            aria-label="Go to home screen"
+          >
             <span className="app-header__icon">🍉</span>
             Frootninja
-          </h1>
+          </button>
         </header>
         
         {/* Multiplayer game */}
@@ -64,10 +77,15 @@ export const App = () => {
     <div className="app-shell">
       {/* Header */}
       <header className="app-header">
-        <h1 className="app-header__title">
+        <button 
+          className="app-header__title app-header__title--clickable"
+          onClick={handleGoHome}
+          type="button"
+          aria-label="Go to home screen"
+        >
           <span className="app-header__icon">🍉</span>
           Frootninja
-        </h1>
+        </button>
         <button 
           className="app-header__menu-btn"
           onClick={() => setIsPanelOpen(!isPanelOpen)}
