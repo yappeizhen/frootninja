@@ -1,58 +1,83 @@
+<div align="center">
+
 # 🍉 Frootninja
 
-**Slice fruits with your bare hands using computer vision!**
+### Slice fruits with your bare hands using computer vision
+
+[![Play Now](https://img.shields.io/badge/▶_Play_Now-frootninja.vercel.app-ff6b6b?style=for-the-badge&logo=vercel&logoColor=white)](https://frootninja.vercel.app/)
 
 A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand tracking to detect slicing gestures in real-time. No controllers needed—just wave your hand to play.
 
-<p align="center">
-  <img width="400" alt="Solo gameplay" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
-  <img width="400" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
-</p>
+<br />
 
-<p align="center">
-  <a href="https://frootninja.vercel.app/">
-    <img src="https://img.shields.io/badge/▶_Play_Now-frootninja.vercel.app-ff6b6b?style=for-the-badge&logo=vercel&logoColor=white" alt="Play Now" />
-  </a>
-</p>
+<img width="600" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 19" />
-  <img src="https://img.shields.io/badge/Three.js-3D_Graphics-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
-  <img src="https://img.shields.io/badge/MediaPipe-Hand_Tracking-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Firebase-Firestore-F5820D?style=flat-square&logo=firebase&logoColor=white" alt="Firebase" />
-  <img src="https://img.shields.io/badge/WebRTC-P2P_Video-FF6B6B?style=flat-square&logo=webrtc&logoColor=white" alt="WebRTC" />
-</p>
+<sub>✨ Neon-drenched home screen with solo, versus, and online multiplayer modes</sub>
 
----
+<br /><br />
+
+<table>
+<tr>
+<td align="center">
+<img width="400" alt="Solo gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
+<br />
+<sub><b>Solo Mode</b> — 60 seconds of fruit-slicing mayhem</sub>
+</td>
+<td align="center">
+<img width="400" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/c61f7a10-cb54-4cb5-967c-42289f110cc7" />
+<br />
+<sub><b>Online Multiplayer</b> — Head-to-head with live video</sub>
+</td>
+</tr>
+</table>
+
+<br />
+
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)
+![Three.js](https://img.shields.io/badge/Three.js-3D_Graphics-000000?style=flat-square&logo=threedotjs&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand_Tracking-4285F4?style=flat-square&logo=google&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore-F5820D?style=flat-square&logo=firebase&logoColor=white)
+![WebRTC](https://img.shields.io/badge/WebRTC-P2P_Video-FF6B6B?style=flat-square&logo=webrtc&logoColor=white)
+
+</div>
+
+<br />
 
 ## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
 
 ### 🎮 Game Modes
 
 - **Solo Mode** — Race against the clock! Score as many points as you can in 60 seconds
 - **Versus Mode** — Two-player local multiplayer using left hand (P1) vs right hand (P2)
-- **Online Multiplayer** — Head-to-head 30s matches with a friend. Create a 4-letter room code, share it, and play in sync with mirrored spawns.
+- **Online Multiplayer** — Head-to-head 30s matches with a friend via WebRTC
 
-### 🍓 Variety of Fruits
+</td>
+<td width="50%">
 
-Slice through 7 beautifully rendered 3D fruits:
-- 🍓 Strawberry
-- 🍊 Orange  
-- 🍎 Apple
-- 🍉 Watermelon
-- 🍇 Grape
-- 🍋 Lemon
-- 🥝 Kiwi
+### 🍓 Slice Through 7 Fruits
 
-### 💣 Bombs
+🍓 Strawberry • 🍊 Orange • 🍎 Apple  
+🍉 Watermelon • 🍇 Grape • 🍋 Lemon • 🥝 Kiwi
 
-Watch out! Hitting a bomb will cost you points. The bombs feature a glowing fuse and realistic explosion effects.
+Each fruit is beautifully rendered in 3D with physically-based materials, subsurface scattering, and environment reflections.
+
+</td>
+</tr>
+</table>
+
+### 💣 Watch Out for Bombs!
+
+Hitting a bomb costs you points. Features a glowing fuse and realistic explosion effects.
 
 ### 🎨 Visual Effects
 
-- **Realistic 3D fruit** with subsurface scattering, clearcoat materials, and environment reflections
+- **Realistic 3D fruit** with clearcoat materials and environment reflections
 - **Satisfying slice physics** — fruits split into halves that tumble away
 - **Juice particles** spray on every successful slice
 - **Smooth animations** with scale-in effects and dynamic lighting
@@ -61,16 +86,12 @@ Watch out! Hitting a bomb will cost you points. The bombs feature a glowing fuse
 
 - **Real-time multiplayer** using Firebase (signaling/state) + WebRTC (P2P video)
 - **Seeded RNG** keeps fruit spawns identical for both players
-- **Shared slice events** let you see the opponent’s swipes
-- **Global leaderboard** (optional) backed by Firestore
+- **Shared slice events** let you see the opponent's swipes
+- **Global leaderboard** backed by Firestore
 
 ### 📊 Live Analytics Panel
 
-Track your performance in real-time:
-- Speed and power meters
-- Slice direction compass
-- Combo counter and peak stats
-- Hand tracking status
+Track your performance in real-time with speed/power meters, slice direction compass, combo counter, and hand tracking status.
 
 ---
 
@@ -81,24 +102,6 @@ Track your performance in real-time:
 - Node.js 18+ 
 - A device with a webcam
 - A modern browser (Chrome, Edge, or Firefox recommended)
-
-### Environment (Firebase for multiplayer + leaderboard)
-
-Solo and local play run without configuration. Online multiplayer and the global leaderboard require a Firebase project with Firestore enabled. Create `.env.local` in the repo root:
-
-```bash
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
-```
-
-Firebase quickstart:
-1. Create a project at https://console.firebase.google.com
-2. Add a Web App to get the config above
-3. Enable Firestore Database (test mode is fine for local dev)
 
 ### Installation
 
@@ -115,6 +118,25 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) and allow camera access to play!
+
+> **Note:** Solo and local play work without any configuration. Online multiplayer and the global leaderboard require Firebase—see below.
+
+### Firebase Setup (Optional — for Online Multiplayer)
+
+Create `.env.local` in the repo root with your Firebase config:
+
+```bash
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
+```
+
+1. Create a project at [Firebase Console](https://console.firebase.google.com)
+2. Add a Web App to get the config above
+3. Enable Firestore Database (test mode is fine for local dev)
 
 ### Available Scripts
 
@@ -136,10 +158,10 @@ Open [http://localhost:5173](http://localhost:5173) and allow camera access to p
 | [React 19](https://react.dev/) | UI framework |
 | [TypeScript](https://www.typescriptlang.org/) | Type safety |
 | [Vite](https://vite.dev/) | Build tool & dev server |
-| [Firebase Firestore](https://firebase.google.com/) | Multiplayer signaling & leaderboard storage |
-| [WebRTC](https://webrtc.org/) | Peer-to-peer opponent video |
 | [Three.js](https://threejs.org/) | 3D graphics rendering |
 | [MediaPipe Tasks Vision](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker) | Real-time hand tracking |
+| [Firebase Firestore](https://firebase.google.com/) | Multiplayer signaling & leaderboard |
+| [WebRTC](https://webrtc.org/) | Peer-to-peer video streaming |
 | [Zustand](https://zustand-demo.pmnd.rs/) | State management |
 | [Vitest](https://vitest.dev/) | Testing framework |
 
@@ -149,22 +171,25 @@ Open [http://localhost:5173](http://localhost:5173) and allow camera access to p
 
 ### Hand Tracking Pipeline
 
-1. **Camera Capture** — Webcam feed is captured at up to 60fps
-2. **Hand Detection** — MediaPipe Hand Landmarker identifies 21 landmarks per hand
-3. **Gesture Recognition** — Custom algorithm tracks index fingertip velocity
-4. **Slice Detection** — When fingertip speed exceeds threshold, a slice gesture is triggered
-5. **Hit Testing** — 3D fruit positions are projected to screen space to check for collisions
+```
+📷 Camera Capture    →    🖐️ Hand Detection    →    ✋ Gesture Recognition
+   (60fps webcam)         (21 landmarks/hand)        (fingertip velocity)
+                                                            ↓
+   🎯 Hit Testing    ←    ⚡ Slice Detection   ←    🔪 Threshold Check
+   (3D → 2D project)      (speed > 1.6 u/s)         (distance > 0.015)
+```
 
-### Gesture Detection
+### Gesture Detection Thresholds
 
-The gesture controller monitors finger movement and triggers a slice when:
-- Movement speed exceeds **1.6 units/second**
-- Distance traveled is at least **0.015 units**
-- **250ms cooldown** between consecutive slices
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| Speed | >1.6 units/sec | Minimum fingertip velocity |
+| Distance | >0.015 units | Minimum travel distance |
+| Cooldown | 250ms | Delay between consecutive slices |
 
 ### 3D Rendering
 
-Fruits are rendered using Three.js with physically-based materials featuring:
+Fruits use Three.js with physically-based materials:
 - **Clearcoat** for waxy fruit skin appearance
 - **Subsurface scattering** simulation via transmission
 - **Environment mapping** for realistic reflections
@@ -172,19 +197,11 @@ Fruits are rendered using Three.js with physically-based materials featuring:
 
 ### Online Multiplayer Flow
 
-1. Host creates a room (4-letter code) and shares it with a friend
-2. Both players allow camera access; WebRTC shares video streams peer-to-peer
-3. Firestore synchronizes lobby state, countdown, scores, and seeded fruit spawns
-4. Host starts the match once video is connected; rematches reuse the same room
-
----
-
-## 🧑‍🤝‍🧑 Multiplayer Quickstart
-
-- Open Multiplayer from the main menu and create a room to get a 4-letter code.
-- Share the code with your friend; they join from the same menu.
-- Wait for the “video connected” status, then the host starts the match.
-- Each round is 30 seconds with mirrored fruit spawns; hit rematch to play again without leaving the room.
+1. 🏠 **Create Room** — Host generates a 4-letter code
+2. 📤 **Share Code** — Friend joins with the same code
+3. 📹 **Video Connect** — WebRTC establishes peer-to-peer streams
+4. 🎮 **Play** — 30-second match with mirrored fruit spawns
+5. 🔄 **Rematch** — Play again without leaving the room
 
 ---
 
@@ -229,11 +246,13 @@ src/
 
 ## 🎯 Tips for Best Experience
 
-1. **Good lighting** — Ensure your hands are well-lit for accurate tracking
-2. **Plain background** — A simple background helps hand detection
-3. **Camera distance** — Position yourself so your hands are clearly visible
-4. **Fast swipes** — Quick, decisive movements trigger slices best
-5. **Use your index finger** — The game tracks your index fingertip
+| Tip | Why |
+|-----|-----|
+| 💡 **Good lighting** | Well-lit hands track more accurately |
+| 🖼️ **Plain background** | Reduces false positives in detection |
+| 📏 **Proper distance** | Keep hands clearly visible in frame |
+| ⚡ **Fast swipes** | Quick, decisive movements trigger best |
+| ☝️ **Use index finger** | The game tracks your index fingertip |
 
 ---
 
@@ -243,6 +262,10 @@ MIT © 2025
 
 ---
 
-<p align="center">
-  <strong>Built with 🍉 and computer vision magic</strong>
-</p>
+<div align="center">
+
+**Built with 🍉 and computer vision magic**
+
+[Play Now](https://frootninja.vercel.app/) • [Report Bug](https://github.com/yourusername/frootninja/issues) • [Request Feature](https://github.com/yourusername/frootninja/issues)
+
+</div>
