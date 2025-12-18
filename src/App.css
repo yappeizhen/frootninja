@@ -253,6 +253,32 @@ h1, h2, h3 {
   color: rgba(255, 255, 255, 0.2);
 }
 
+.app-footer__link {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  transition: color 0.2s ease;
+}
+
+.app-footer__link:hover {
+  color: var(--accent-pink);
+}
+
+.app-footer__github-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.app-footer__link:hover .app-footer__github-icon {
+  opacity: 1;
+}
+
 .playfield-stage {
   position: relative;
   border-radius: 0.75rem;

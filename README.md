@@ -82,7 +82,7 @@ Real-time multiplayer with seeded RNG for identical spawns. See your opponent's 
 </td>
 <td width="50%">
 
-### 📊 Live Analytics Panel
+### 📊 Analytics Panel
 
 Speed/power meters, slice direction compass, combo counter, and hand tracking status.
 
