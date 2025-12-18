@@ -69,7 +69,7 @@ const DirectionIndicator = ({ x, y }: { x: number; y: number }) => {
 export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) => {
   const { frame, maxHands } = useHandData()
   const { lastGesture } = useGestureDetection()
-  const { score, combo, highScore } = useGameStore()
+  const { score, combo, highScore, gameMode } = useGameStore()
   const [totalSlices, setTotalSlices] = useState(0)
   const [maxCombo, setMaxCombo] = useState(0)
   const [peakSpeed, setPeakSpeed] = useState(0)
@@ -104,7 +104,7 @@ export const GestureDebugPanel = ({ isOpen, onToggle }: GestureDebugPanelProps) 
   }, [lastGesture])
 
   if (showLeaderboard) {
-    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+    return <Leaderboard onClose={() => setShowLeaderboard(false)} initialMode={gameMode} />
   }
 
   return (

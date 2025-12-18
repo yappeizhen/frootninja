@@ -17,7 +17,7 @@ export const StartScreen = ({ onStart }: StartScreenProps) => {
   const [showMultiplayerMenu, setShowMultiplayerMenu] = useState(false)
 
   if (showLeaderboard) {
-    return <Leaderboard onClose={() => setShowLeaderboard(false)} />
+    return <Leaderboard onClose={() => setShowLeaderboard(false)} initialMode={gameMode} />
   }
 
   if (showMultiplayerMenu) {
@@ -197,6 +197,8 @@ export const GameOverScreen = ({ onRestart, onChangeMode, isNewHighScore }: Game
         onClose={() => setView('results')}
         highlightScore={hasSubmitted ? score : undefined}
         highlightRank={hasSubmitted ? rank : undefined}
+        initialMode={gameMode}
+        highlightMode={gameMode}
       />
     )
   }

@@ -1,19 +1,34 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getTopScores, type LeaderboardEntry } from '@/services/leaderboardService'
 import { isFirebaseEnabled } from '@/services/firebase'
+import type { GameMode } from '@/types'
 
 interface LeaderboardProps {
   onClose: () => void
   highlightScore?: number
   highlightRank?: number
+  initialMode?: GameMode
+  highlightMode?: GameMode
 }
 
-export const Leaderboard = ({ onClose, highlightScore, highlightRank }: LeaderboardProps) => {
+const MODE_TABS: { id: GameMode; label: string; icon: string }[] = [
+  { id: 'solo', label: 'Solo', icon: '👤' },
+  { id: 'multiplayer', label: 'Multiplayer', icon: '👥' },
+]
+
+export const Leaderboard = ({
+  onClose,
+  highlightScore,
+  highlightRank,
+  initialMode = 'solo',
+  highlightMode,
+}: LeaderboardProps) => {
+  const [selectedMode, setSelectedMode] = useState<GameMode>(initialMode)
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchScores = useCallback(async () => {
+  const fetchScores = useCallback(async (mode: GameMode) => {
     if (!isFirebaseEnabled()) {
       setError('Leaderboard not configured')
       setLoading(false)
@@ -23,7 +38,8 @@ export const Leaderboard = ({ onClose, highlightScore, highlightRank }: Leaderbo
     try {
       setLoading(true)
       setError(null)
-      const scores = await getTopScores(50)
+      setEntries([])
+      const scores = await getTopScores(50, mode)
       setEntries(scores)
     } catch (err) {
       setError('Failed to load leaderboard')
@@ -34,8 +50,8 @@ export const Leaderboard = ({ onClose, highlightScore, highlightRank }: Leaderbo
   }, [])
 
   useEffect(() => {
-    fetchScores()
-  }, [fetchScores])
+    fetchScores(selectedMode)
+  }, [fetchScores, selectedMode])
 
   return (
     <div className="leaderboard-overlay" onClick={onClose}>
@@ -46,6 +62,26 @@ export const Leaderboard = ({ onClose, highlightScore, highlightRank }: Leaderbo
             ✕
           </button>
         </header>
+
+        <div className="leaderboard__tabs" role="tablist" aria-label="Select leaderboard mode">
+          {MODE_TABS.map((mode) => {
+            const isActive = mode.id === selectedMode
+            return (
+              <button
+                key={mode.id}
+                className={`leaderboard__tab ${isActive ? 'leaderboard__tab--active' : ''}`}
+                onClick={() => setSelectedMode(mode.id)}
+                role="tab"
+                aria-selected={isActive}
+              >
+                <span className="leaderboard__tab-icon" aria-hidden="true">
+                  {mode.icon}
+                </span>
+                <span className="leaderboard__tab-label">{mode.label}</span>
+              </button>
+            )
+          })}
+        </div>
 
         <div className="leaderboard__content">
           {loading && (
@@ -80,7 +116,7 @@ export const Leaderboard = ({ onClose, highlightScore, highlightRank }: Leaderbo
           {!loading && !error && entries.length === 0 && (
             <div className="leaderboard__empty">
               <span>🎮</span>
-              <span>No scores yet. Be the first!</span>
+              <span>No {selectedMode === 'solo' ? 'solo' : 'multiplayer'} scores yet. Be the first!</span>
             </div>
           )}
 
@@ -88,8 +124,11 @@ export const Leaderboard = ({ onClose, highlightScore, highlightRank }: Leaderbo
             <div className="leaderboard__list">
               {entries.map((entry, index) => {
                 const rank = index + 1
-                const isHighlighted = highlightScore !== undefined && 
-                  highlightRank !== undefined && 
+                const modeMatches = !highlightMode || highlightMode === selectedMode
+                const isHighlighted =
+                  highlightScore !== undefined &&
+                  highlightRank !== undefined &&
+                  modeMatches &&
                   rank === highlightRank
 
                 return (
