@@ -13,8 +13,17 @@ import {
 } from 'firebase/firestore'
 import { getDb, isFirebaseEnabled } from '@/services/firebase'
 
-// ICE servers cache
+// ICE servers cache (with expiry to handle quota changes)
 let cachedIceServers: RTCConfiguration | null = null
+let cacheTimestamp: number = 0
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes - allows quota status to refresh
+
+// Clear ICE server cache (call when connection fails)
+export function clearIceServerCache(): void {
+  cachedIceServers = null
+  cacheTimestamp = 0
+  console.log('[WebRTC] ICE server cache cleared')
+}
 
 // Helper to normalize env booleans
 const isTruthy = (value: string | undefined): boolean => {
@@ -52,8 +61,14 @@ const prioritizeTurnServers = (servers: RTCIceServer[]): RTCIceServer[] => {
 
 // Fetch TURN credentials from Metered REST API
 async function fetchIceServers(): Promise<RTCConfiguration> {
-  // Return cached if available
-  if (cachedIceServers) return cachedIceServers
+  // Return cached if available and not expired
+  const now = Date.now()
+  if (cachedIceServers && (now - cacheTimestamp) < CACHE_TTL_MS) {
+    return cachedIceServers
+  }
+  
+  // Clear expired cache
+  cachedIceServers = null
 
   const iceServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -130,6 +145,7 @@ async function fetchIceServers(): Promise<RTCConfiguration> {
   }
 
   cachedIceServers = config
+  cacheTimestamp = Date.now()
   return cachedIceServers
 }
 
@@ -224,7 +240,9 @@ export async function createPeerConnection(
     console.log('[WebRTC] ICE state:', pc.iceConnectionState)
     // Attempt ICE restart if connection fails or disconnects
     if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-      console.log('[WebRTC] ICE failed/disconnected, attempting restart in 2s...')
+      console.log('[WebRTC] ICE failed/disconnected, clearing cache and attempting restart in 2s...')
+      // Clear ICE server cache so next connection attempt gets fresh servers
+      clearIceServerCache()
       setTimeout(() => {
         if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
           console.log('[WebRTC] Restarting ICE...')
