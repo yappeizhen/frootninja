@@ -98,6 +98,7 @@ export class FruitGame {
   private envMap: THREE.Texture | null = null
   private spawningEnabled = true
   private onFruitMissed: FruitMissedCallback | null = null
+  private sliceHitboxRadius = 0.15 // Default hitbox radius (normalized screen coords)
 
   // Shared Geometries - higher poly for smoother look
   private sphereGeo = new THREE.SphereGeometry(1, 64, 64)
@@ -462,6 +463,15 @@ export class FruitGame {
     this.onFruitSpawn = callback
   }
 
+  /**
+   * Set the slice hitbox radius (normalized screen coordinates).
+   * Larger values make slicing easier/more forgiving.
+   * Default is 0.15, multiplayer uses 0.25 for better responsiveness.
+   */
+  setSliceHitboxRadius(radius: number) {
+    this.sliceHitboxRadius = radius
+  }
+
   clearFruits() {
     this.fruits.forEach((fruit) => {
       this.scene.remove(fruit.mesh)
@@ -808,8 +818,6 @@ export class FruitGame {
 
   private pickGestureTarget(gesture: GestureEvent): FruitBody | null {
     if (!this.fruits.length) return null
-    // Distance threshold for slice hitbox (normalized screen coords)
-    const maxDistance = 0.15
     let bestFruit: FruitBody | null = null
     let bestDistance = Infinity
     for (const fruit of this.fruits) {
@@ -817,7 +825,7 @@ export class FruitGame {
       const dx = screen.x - gesture.origin.x
       const dy = screen.y - gesture.origin.y
       const distance = Math.hypot(dx, dy)
-      if (distance > maxDistance) continue
+      if (distance > this.sliceHitboxRadius) continue
       if (distance < bestDistance) {
         bestFruit = fruit
         bestDistance = distance
