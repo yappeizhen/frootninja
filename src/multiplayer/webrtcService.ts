@@ -229,15 +229,75 @@ export async function createPeerConnection(
     // Ignore - collection might not exist
   }
 
+  // Track ICE restart state
+  let iceRestartInProgress = false
+  let iceRestartAttempts = 0
+  const MAX_ICE_RESTART_ATTEMPTS = 3
+
+  // Helper function to perform ICE restart with proper renegotiation
+  const performIceRestart = async () => {
+    if (iceRestartInProgress) {
+      console.log('[WebRTC] ICE restart already in progress, skipping')
+      return
+    }
+    
+    if (iceRestartAttempts >= MAX_ICE_RESTART_ATTEMPTS) {
+      console.error('[WebRTC] Max ICE restart attempts reached, giving up')
+      return
+    }
+
+    iceRestartInProgress = true
+    iceRestartAttempts++
+    console.log('[WebRTC] Starting ICE restart attempt', iceRestartAttempts, '/', MAX_ICE_RESTART_ATTEMPTS)
+
+    try {
+      if (isHost) {
+        // Host creates new offer with iceRestart flag
+        console.log('[WebRTC] Host creating ICE restart offer...')
+        const offer = await pc.createOffer({ iceRestart: true })
+        await pc.setLocalDescription(offer)
+        
+        await setDoc(signalingDoc, {
+          type: 'offer',
+          sdp: offer.sdp,
+          timestamp: Date.now(),
+          iceRestart: true,
+        })
+        console.log('[WebRTC] Host sent ICE restart offer')
+      } else {
+        // Guest: just restart ICE, wait for host's new offer
+        console.log('[WebRTC] Guest calling restartIce(), waiting for host offer...')
+        pc.restartIce()
+      }
+    } catch (error) {
+      console.error('[WebRTC] ICE restart failed:', error)
+    } finally {
+      // Reset flag after a delay to allow for completion
+      setTimeout(() => {
+        iceRestartInProgress = false
+      }, 5000)
+    }
+  }
+
   // Debug logging for connection states
   pc.onconnectionstatechange = () => {
     console.log('[WebRTC] Connection state:', pc.connectionState)
+    if (pc.connectionState === 'connected') {
+      // Reset restart attempts on successful connection
+      iceRestartAttempts = 0
+    }
     if (pc.connectionState === 'failed') {
-      console.error('[WebRTC] Connection failed - may need to restart signaling')
+      console.error('[WebRTC] Connection failed - attempting ICE restart')
+      clearIceServerCache()
+      performIceRestart()
     }
   }
   pc.oniceconnectionstatechange = () => {
     console.log('[WebRTC] ICE state:', pc.iceConnectionState)
+    if (pc.iceConnectionState === 'connected') {
+      // Reset restart attempts on successful connection
+      iceRestartAttempts = 0
+    }
     // Attempt ICE restart if connection fails or disconnects
     if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
       console.log('[WebRTC] ICE failed/disconnected, clearing cache and attempting restart in 2s...')
@@ -245,8 +305,7 @@ export async function createPeerConnection(
       clearIceServerCache()
       setTimeout(() => {
         if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-          console.log('[WebRTC] Restarting ICE...')
-          pc.restartIce()
+          performIceRestart()
         }
       }, 2000)
     }
@@ -387,6 +446,9 @@ export async function createPeerConnection(
             console.log('[WebRTC] Host set remote description, flushing ICE candidates...')
             await flushPendingIceCandidates()
             console.log('[WebRTC] Host ready!')
+            
+            // Reset ICE restart flag on successful answer
+            iceRestartInProgress = false
           } catch (error) {
             console.error('[WebRTC] Host failed to set remote description:', error)
           }
@@ -396,12 +458,23 @@ export async function createPeerConnection(
     } else {
       // Guest waits for offer, then creates answer
       console.log('[WebRTC] Guest waiting for offer...')
+      let lastOfferTimestamp = 0
+      
       const unsubOffer = onSnapshot(remoteSigDoc, async (snapshot) => {
         const data = snapshot.data()
-        console.log('[WebRTC] Guest received data:', data?.type, 'signalingState:', pc.signalingState)
-        if (data?.type === 'offer' && pc.signalingState === 'stable') {
+        console.log('[WebRTC] Guest received data:', data?.type, 'signalingState:', pc.signalingState, 'iceRestart:', data?.iceRestart)
+        
+        // Accept offer if:
+        // 1. We're in stable state (initial offer), OR
+        // 2. It's an ICE restart offer (newer timestamp)
+        const isNewOffer = data?.timestamp && data.timestamp > lastOfferTimestamp
+        const canAccept = pc.signalingState === 'stable' || (data?.iceRestart && isNewOffer)
+        
+        if (data?.type === 'offer' && canAccept) {
+          lastOfferTimestamp = data.timestamp || Date.now()
+          
           try {
-            console.log('[WebRTC] Guest processing offer...')
+            console.log('[WebRTC] Guest processing offer...', data.iceRestart ? '(ICE restart)' : '')
             await pc.setRemoteDescription(new RTCSessionDescription({
               type: 'offer',
               sdp: data.sdp,
@@ -416,6 +489,7 @@ export async function createPeerConnection(
               type: 'answer',
               sdp: answer.sdp,
               timestamp: Date.now(),
+              iceRestart: data.iceRestart || false,
             })
             console.log('[WebRTC] Guest sent answer!')
           } catch (error) {

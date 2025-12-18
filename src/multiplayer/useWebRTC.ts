@@ -75,10 +75,28 @@ export function useWebRTC({ roomId, isHost, localStream, enabled }: UseWebRTCOpt
       if (connection) {
         connectionRef.current = connection
         
+        // Track consecutive failures to trigger full reconnect
+        let failedStateCount = 0
+        
         // Monitor connection state
         connection.peerConnection.onconnectionstatechange = () => {
           const state = connection.peerConnection.connectionState
           setConnectionState(state)
+          
+          if (state === 'connected') {
+            failedStateCount = 0
+          } else if (state === 'failed') {
+            failedStateCount++
+            // If ICE restart doesn't fix it after multiple attempts, try full reconnect
+            if (failedStateCount >= 2) {
+              console.log('[useWebRTC] Connection failed multiple times, triggering full reconnect...')
+              setTimeout(() => {
+                if (connectionRef.current?.peerConnection.connectionState === 'failed') {
+                  reconnect()
+                }
+              }, 5000)
+            }
+          }
         }
         
         setConnectionState(connection.peerConnection.connectionState)
