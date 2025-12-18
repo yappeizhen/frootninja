@@ -16,6 +16,40 @@ import { getDb, isFirebaseEnabled } from '@/services/firebase'
 // ICE servers cache
 let cachedIceServers: RTCConfiguration | null = null
 
+// Helper to normalize env booleans
+const isTruthy = (value: string | undefined): boolean => {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on'
+}
+
+// Whether to force TURN relay (useful for restrictive networks)
+const isForceRelayEnabled = (): boolean =>
+  isTruthy(import.meta.env.VITE_WEBRTC_FORCE_RELAY ?? import.meta.env.VITE_FORCE_TURN_RELAY)
+
+// Sort TURN servers to prefer tcp/443 (looks like normal HTTPS)
+const prioritizeTurnServers = (servers: RTCIceServer[]): RTCIceServer[] => {
+  const getPriority = (server: RTCIceServer): number => {
+    const urls = Array.isArray(server.urls) ? server.urls : [server.urls]
+    const hasTurn = urls.some((u) => u.startsWith('turn'))
+    if (!hasTurn) return 0
+    // Highest priority: TLS or tcp on 443
+    const prefersTcp443 = urls.some(
+      (u) =>
+        u.includes(':443') &&
+        (u.includes('transport=tcp') || u.startsWith('turns:'))
+    )
+    if (prefersTcp443) return 3
+    // Next: any explicit tcp transport
+    const hasTcp = urls.some((u) => u.includes('transport=tcp'))
+    if (hasTcp) return 2
+    // Lowest TURN priority: UDP/other ports
+    return 1
+  }
+
+  return [...servers].sort((a, b) => getPriority(b) - getPriority(a))
+}
+
 // Fetch TURN credentials from Metered REST API
 async function fetchIceServers(): Promise<RTCConfiguration> {
   // Return cached if available
@@ -25,6 +59,8 @@ async function fetchIceServers(): Promise<RTCConfiguration> {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
   ]
+
+  const forceRelay = isForceRelayEnabled()
 
   // Try Metered REST API first (uses custom domain that may bypass firewall)
   const apiKey = import.meta.env.VITE_METERED_API_KEY
@@ -76,7 +112,20 @@ async function fetchIceServers(): Promise<RTCConfiguration> {
     }
   }
 
-  cachedIceServers = { iceServers, iceCandidatePoolSize: 10 }
+  const finalIceServers = forceRelay ? prioritizeTurnServers(iceServers) : iceServers
+  const config: RTCConfiguration = {
+    iceServers: finalIceServers,
+    iceCandidatePoolSize: 10,
+  }
+
+  if (forceRelay) {
+    config.iceTransportPolicy = 'relay'
+    console.warn('[WebRTC] Force relay enabled - TURN only (prefers tcp/443)')
+  } else {
+    console.log('[WebRTC] ICE policy: all (host/STUN/TURN)')
+  }
+
+  cachedIceServers = config
   return cachedIceServers
 }
 
