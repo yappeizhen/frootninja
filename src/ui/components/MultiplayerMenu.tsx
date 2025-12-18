@@ -3,8 +3,9 @@
  * Entry point for multiplayer mode - Create or Join room
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useUserStore } from '@/state/userStore'
+import { useMultiplayerStore } from '@/state/multiplayerStore'
 import { useMultiplayerRoom } from '@/multiplayer'
 import { WaitingRoom } from './WaitingRoom'
 import { UsernamePrompt } from './UsernamePrompt'
@@ -18,6 +19,7 @@ type MenuView = 'menu' | 'username' | 'join' | 'waiting'
 
 export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
   const { username, setUsername } = useUserStore()
+  const { pendingRoomCode, clearPendingRoomCode } = useMultiplayerStore()
   const { roomCode, roomState, createRoom, joinRoom, leaveRoom } = useMultiplayerRoom()
   
   const [view, setView] = useState<MenuView>('menu')
@@ -25,6 +27,41 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null)
+  const hasHandledInvite = useRef(false)
+  
+  // Handle pending invite code on mount
+  useEffect(() => {
+    if (pendingRoomCode && !hasHandledInvite.current) {
+      hasHandledInvite.current = true
+      setJoinCode(pendingRoomCode)
+      
+      if (username) {
+        // Auto-join if we have a username
+        handleAutoJoin(pendingRoomCode, username)
+      } else {
+        // Navigate to username prompt first
+        setPendingAction('join')
+        setView('username')
+      }
+    }
+  }, [pendingRoomCode, username])
+  
+  const handleAutoJoin = useCallback(async (code: string, name: string) => {
+    setIsLoading(true)
+    setError(null)
+    
+    const success = await joinRoom(code.toUpperCase(), name)
+    if (success) {
+      clearPendingRoomCode()
+      setView('waiting')
+    } else {
+      // Invalid room code - show join screen with error
+      clearPendingRoomCode()
+      setView('join')
+      setError('Room not found or full. The invite link may have expired.')
+    }
+    setIsLoading(false)
+  }, [joinRoom, clearPendingRoomCode])
 
   const handleCreateRoom = useCallback(async () => {
     const name = username || 'Player'
@@ -73,10 +110,15 @@ export const MultiplayerMenu = ({ onBack }: MultiplayerMenuProps) => {
       }
       setIsLoading(false)
     } else if (pendingAction === 'join') {
-      setView('join')
+      // If we have a pre-filled join code from invite link, auto-join
+      if (joinCode.length === 4) {
+        handleAutoJoin(joinCode, name)
+      } else {
+        setView('join')
+      }
     }
     setPendingAction(null)
-  }, [pendingAction, createRoom, setUsername])
+  }, [pendingAction, createRoom, setUsername, joinCode, handleAutoJoin])
 
   const handleCreateClick = useCallback(() => {
     if (!username) {

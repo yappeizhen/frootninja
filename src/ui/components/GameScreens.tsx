@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useGameStore } from '@/state/gameStore'
 import { useUserStore } from '@/state/userStore'
+import { useMultiplayerStore } from '@/state/multiplayerStore'
 import { submitScore, getPlayerRank } from '@/services/leaderboardService'
 import { isFirebaseEnabled } from '@/services/firebase'
+import { getRoomCodeFromUrl, clearInviteFromUrl } from '@/multiplayer/useInviteLink'
 import { UsernamePrompt } from './UsernamePrompt'
 import { Leaderboard } from './Leaderboard'
 import { MultiplayerMenu } from './MultiplayerMenu'
@@ -13,8 +15,28 @@ interface StartScreenProps {
 
 export const StartScreen = ({ onStart }: StartScreenProps) => {
   const { highScore, gameMode, setGameMode } = useGameStore()
+  const { pendingRoomCode, setPendingRoomCode } = useMultiplayerStore()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showMultiplayerMenu, setShowMultiplayerMenu] = useState(false)
+  
+  // Check for invite link on mount and auto-open multiplayer menu
+  useEffect(() => {
+    const code = getRoomCodeFromUrl()
+    if (code && code.length === 4) {
+      setPendingRoomCode(code)
+      clearInviteFromUrl()
+      setGameMode('multiplayer')
+      setShowMultiplayerMenu(true)
+    }
+  }, [setPendingRoomCode, setGameMode])
+  
+  // Also handle if pendingRoomCode is set externally
+  useEffect(() => {
+    if (pendingRoomCode && !showMultiplayerMenu) {
+      setGameMode('multiplayer')
+      setShowMultiplayerMenu(true)
+    }
+  }, [pendingRoomCode, showMultiplayerMenu, setGameMode])
 
   if (showLeaderboard) {
     return <Leaderboard onClose={() => setShowLeaderboard(false)} initialMode={gameMode} />

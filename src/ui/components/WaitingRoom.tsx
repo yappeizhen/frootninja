@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useMultiplayerRoom } from '@/multiplayer'
+import { generateInviteLink } from '@/multiplayer/useInviteLink'
 
 interface WaitingRoomProps {
   onBack: () => void
@@ -24,7 +25,7 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
     startGame,
   } = useMultiplayerRoom()
 
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle')
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'code-copied' | 'link-copied'>('idle')
   const [countdown, setCountdown] = useState<number | null>(null)
 
   // Auto-ready when joining the room
@@ -70,11 +71,25 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
     if (!roomCode) return
     try {
       await navigator.clipboard.writeText(roomCode)
-      setCopyStatus('copied')
+      setCopyStatus('code-copied')
       setTimeout(() => setCopyStatus('idle'), 2000)
     } catch {
       // Fallback for older browsers
       window.prompt('Share this code with a friend:', roomCode)
+    }
+  }, [roomCode])
+
+  const handleCopyLink = useCallback(async () => {
+    if (!roomCode) return
+    try {
+      const link = generateInviteLink(roomCode)
+      await navigator.clipboard.writeText(link)
+      setCopyStatus('link-copied')
+      setTimeout(() => setCopyStatus('idle'), 2000)
+    } catch {
+      // Fallback for older browsers
+      const link = generateInviteLink(roomCode)
+      window.prompt('Share this invite link with a friend:', link)
     }
   }, [roomCode])
 
@@ -106,12 +121,19 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
             <button 
               className="waiting-room__copy-btn"
               onClick={handleCopyCode}
-              title={copyStatus === 'copied' ? 'Copied!' : 'Copy code'}
+              title={copyStatus === 'code-copied' ? 'Copied!' : 'Copy code'}
             >
-              {copyStatus === 'copied' ? '✓' : '📋'}
+              {copyStatus === 'code-copied' ? '✓' : '📋'}
+            </button>
+            <button 
+              className="waiting-room__copy-btn"
+              onClick={handleCopyLink}
+              title={copyStatus === 'link-copied' ? 'Link Copied!' : 'Copy invite link'}
+            >
+              {copyStatus === 'link-copied' ? '✓' : '🔗'}
             </button>
           </div>
-          <span className="waiting-room__code-hint">Share this code with a friend!</span>
+          <span className="waiting-room__code-hint">Share the code or invite link with a friend!</span>
         </div>
 
         {/* Players List */}

@@ -24,6 +24,9 @@ interface MultiplayerStore {
   opponent: RoomPlayer | null
   opponentSlices: SliceEventMP[]
 
+  // Invite link state
+  pendingRoomCode: string | null
+
   // Setters
   setRoomId: (roomId: string | null) => void
   setRoomCode: (roomCode: string | null) => void
@@ -36,6 +39,8 @@ interface MultiplayerStore {
   setOpponent: (opponent: RoomPlayer | null) => void
   addOpponentSlice: (slice: SliceEventMP) => void
   clearOpponentSlices: () => void
+  setPendingRoomCode: (code: string | null) => void
+  clearPendingRoomCode: () => void
 
   // Reset
   reset: () => void
@@ -53,6 +58,7 @@ const initialState = {
   opponentId: null,
   opponent: null,
   opponentSlices: [],
+  pendingRoomCode: null,
 }
 
 export const useMultiplayerStore = create<MultiplayerStore>()((set) => ({
@@ -73,7 +79,9 @@ export const useMultiplayerStore = create<MultiplayerStore>()((set) => ({
       opponentSlices: [...state.opponentSlices.slice(-20), slice], // Keep last 20 slices
     })),
   clearOpponentSlices: () => set({ opponentSlices: [] }),
+  setPendingRoomCode: (pendingRoomCode) => set({ pendingRoomCode }),
+  clearPendingRoomCode: () => set({ pendingRoomCode: null }),
 
-  reset: () => set(initialState),
+  reset: () => set({ ...initialState, pendingRoomCode: null }),
 }))
 
