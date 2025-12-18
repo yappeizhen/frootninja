@@ -107,6 +107,10 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const timerRef = useRef<number | null>(null)
   const syncIntervalRef = useRef<number | null>(null)
   const gameInitializedRef = useRef(false)
+  
+  // Throttling refs to reduce Firebase writes
+  const lastScoreSyncRef = useRef<number>(0)
+  const pendingScoreSyncRef = useRef<{ score: number; combo: number; maxCombo: number } | null>(null)
 
   // Local game state
   const [myScore, setMyScore] = useState(0)
@@ -418,7 +422,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         setMyCombo(newCombo)
         setMyMaxCombo(newMaxCombo)
 
-        // Report slice for opponent visualization
+        // Report slice for opponent visualization (no throttling - it's just updating one field)
         if (roomId) {
           reportSlice(result.fruitId, { x: gestureToUse.origin.x, y: gestureToUse.origin.y })
         }
@@ -426,10 +430,37 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [lastGesture, isPlaying, myScore, myCombo, myMaxCombo, videoElement])
 
-  // Sync score immediately when it changes
+  // Throttled score sync - max once per 300ms (barely perceptible delay)
   useEffect(() => {
-    if (isPlaying && roomId) {
+    if (!isPlaying || !roomId) return
+    
+    const THROTTLE_MS = 300
+    const now = Date.now()
+    const timeSinceLastSync = now - lastScoreSyncRef.current
+    
+    // Store pending score
+    pendingScoreSyncRef.current = { score: myScore, combo: myCombo, maxCombo: myMaxCombo }
+    
+    if (timeSinceLastSync >= THROTTLE_MS) {
+      // Enough time has passed, sync immediately
       syncScore(myScore, myCombo, myMaxCombo)
+      lastScoreSyncRef.current = now
+      pendingScoreSyncRef.current = null
+    } else {
+      // Schedule a sync after the throttle period
+      const delay = THROTTLE_MS - timeSinceLastSync
+      const timeoutId = setTimeout(() => {
+        if (pendingScoreSyncRef.current) {
+          syncScore(
+            pendingScoreSyncRef.current.score,
+            pendingScoreSyncRef.current.combo,
+            pendingScoreSyncRef.current.maxCombo
+          )
+          lastScoreSyncRef.current = Date.now()
+          pendingScoreSyncRef.current = null
+        }
+      }, delay)
+      return () => clearTimeout(timeoutId)
     }
   }, [myScore, myCombo, myMaxCombo, isPlaying, roomId, syncScore])
 

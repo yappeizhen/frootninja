@@ -221,12 +221,25 @@ export async function leaveRoom(roomId: string): Promise<void> {
     const playerCount = Object.keys(roomData.players || {}).length
 
     if (playerCount <= 1) {
-      // Last player leaving, delete the room
+      // Last player leaving, delete the room entirely
       await deleteDoc(roomRef)
+      
+      // Also clean up any signaling subcollection data
+      try {
+        const signalingCol = collection(db, 'rooms', roomId, 'signaling')
+        const signalingDocs = await getDocs(signalingCol)
+        const deletePromises = signalingDocs.docs.map(d => deleteDoc(d.ref))
+        await Promise.all(deletePromises)
+      } catch {
+        // Ignore signaling cleanup errors
+      }
     } else {
       // Remove just this player by creating new players object without this player
       const updatedPlayers = { ...roomData.players }
       delete updatedPlayers[playerId]
+      
+      // Clear sensitive game data from the leaving player to reduce storage
+      // (scores, slices, etc. - not needed after they leave)
 
       const updates: Record<string, unknown> = { players: updatedPlayers }
 
@@ -242,6 +255,33 @@ export async function leaveRoom(roomId: string): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to leave room:', error)
+  }
+}
+
+/**
+ * Delete a room immediately (for cleanup after games)
+ */
+export async function deleteRoom(roomId: string): Promise<void> {
+  if (!isFirebaseEnabled()) return
+
+  const db = getDb()
+  if (!db) return
+
+  try {
+    const roomRef = doc(db, 'rooms', roomId)
+    await deleteDoc(roomRef)
+    
+    // Also clean up signaling subcollection
+    try {
+      const signalingCol = collection(db, 'rooms', roomId, 'signaling')
+      const signalingDocs = await getDocs(signalingCol)
+      const deletePromises = signalingDocs.docs.map(d => deleteDoc(d.ref))
+      await Promise.all(deletePromises)
+    } catch {
+      // Ignore signaling cleanup errors
+    }
+  } catch (error) {
+    console.error('Failed to delete room:', error)
   }
 }
 
@@ -559,7 +599,8 @@ export async function cleanupStaleRooms(): Promise<void> {
   const db = getDb()
   if (!db) return
 
-  const STALE_THRESHOLD = 10 * 60 * 1000 // 10 minutes
+  const WAITING_STALE_THRESHOLD = 10 * 60 * 1000 // 10 minutes for waiting rooms
+  const FINISHED_STALE_THRESHOLD = 2 * 60 * 1000 // 2 minutes for finished rooms
 
   try {
     const roomsRef = collection(db, 'rooms')
@@ -573,14 +614,14 @@ export async function cleanupStaleRooms(): Promise<void> {
       const age = now - room.createdAt
 
       // Delete rooms that are stale and still in waiting state
-      if (room.state === 'waiting' && age > STALE_THRESHOLD) {
+      if (room.state === 'waiting' && age > WAITING_STALE_THRESHOLD) {
         deletePromises.push(deleteDoc(doc(db, 'rooms', docSnap.id)))
       }
 
-      // Delete finished rooms older than threshold
+      // Delete finished rooms after short time (game data not needed)
       if (room.state === 'finished' && room.endedAt) {
         const finishedAge = now - room.endedAt
-        if (finishedAge > STALE_THRESHOLD) {
+        if (finishedAge > FINISHED_STALE_THRESHOLD) {
           deletePromises.push(deleteDoc(doc(db, 'rooms', docSnap.id)))
         }
       }
