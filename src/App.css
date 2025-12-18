@@ -4112,43 +4112,6 @@ h1, h2, h3 {
   color: var(--text-muted);
 }
 
-.waiting-room__invite-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0.6rem 1.2rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  width: 100%;
-  max-width: 240px;
-}
-
-.waiting-room__invite-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.1) 100%);
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-1px);
-}
-
-.waiting-room__invite-btn:active {
-  transform: translateY(0);
-}
-
-.waiting-room__invite-icon {
-  font-size: 1rem;
-}
-
-.waiting-room__invite-text {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-main);
-}
-
 .waiting-room__players {
   display: flex;
   flex-direction: column;
