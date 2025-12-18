@@ -158,8 +158,8 @@ Open [http://localhost:5173](http://localhost:5173) and allow camera access to p
 ### Gesture Detection
 
 The gesture controller monitors finger movement and triggers a slice when:
-- Movement speed exceeds **1.35 units/second**
-- Distance traveled is at least **0.012 units**
+- Movement speed exceeds **1.6 units/second**
+- Distance traveled is at least **0.015 units**
 - **250ms cooldown** between consecutive slices
 
 ### 3D Rendering
