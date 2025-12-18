@@ -16,39 +16,24 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 
 <br />
 
-<img width="400" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
-
-
-<br /><br />
-
+<img width="600" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
 <table>
 <tr>
 <td align="center">
-<img width="400" alt="Solo gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
+<img width="500" alt="Solo gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
 <br />
 <sub><b>Solo Mode</b></sub>
 </td>
 <td align="center">
-<img width="500" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/c61f7a10-cb54-4cb5-967c-42289f110cc7" />
+<img width="500" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/6ac886b2-60fb-4909-8679-c6fd44841dd5" />
 <br />
 <sub><b>Live Online Multiplayer</b></sub>
 </td>
 </tr>
 </table>
-
-<br />
-
-![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)
-![Three.js](https://img.shields.io/badge/Three.js-3D_Graphics-000000?style=flat-square&logo=threedotjs&logoColor=white)
-![MediaPipe](https://img.shields.io/badge/MediaPipe-Hand_Tracking-4285F4?style=flat-square&logo=google&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-Firestore-F5820D?style=flat-square&logo=firebase&logoColor=white)
-![WebRTC](https://img.shields.io/badge/WebRTC-P2P_Video-FF6B6B?style=flat-square&logo=webrtc&logoColor=white)
-
 </div>
 
-<br />
+---
 
 ## ✨ Features
 
