@@ -293,11 +293,10 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           const rng = new SeededRNG(seed)
           game.setSeededRNG(rng)
           
-          // Use VERY large hitbox for multiplayer mode
-          // On mobile, aspect ratio differences between video and screen cause major coordinate issues
-          // We compensate with an extremely forgiving hitbox
+          // On mobile (full-screen layout), use same hitbox as solo mode
+          // On desktop (split-screen), use slightly larger hitbox due to aspect ratio differences
           const isMobile = window.innerWidth < 1024
-          game.setSliceHitboxRadius(isMobile ? 0.65 : 0.45)
+          game.setSliceHitboxRadius(isMobile ? 0.15 : 0.22)
           
           game.setOnFruitSpawn(() => {
             // Could sync spawn data if needed for opponent view
@@ -378,38 +377,27 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       return
     }
 
-    // Transform gesture for trail display only
-    const transformed = transformGestureToCanvasSpace(
-      lastGesture,
-      videoElement,
-      myCanvasRef.current
-    )
-    setTransformedGesture(transformed)
+    // On mobile (< 1024px), the layout is full-screen like solo mode
+    // So we use original coordinates without transformation
+    // On desktop split-screen, we need to transform for the aspect ratio difference
+    const isMobile = window.innerWidth < 1024
+    
+    const gestureToUse = isMobile 
+      ? lastGesture 
+      : transformGestureToCanvasSpace(lastGesture, videoElement, myCanvasRef.current)
+    
+    setTransformedGesture(gestureToUse)
 
     if (!isPlaying || !myGameRef.current) {
       return
     }
 
-    // For hit detection, try multiple coordinate variations
-    // This handles edge cases where the transformation might be slightly off
-    let result = myGameRef.current.handleGesture(transformed)
+    // Use the appropriate gesture for hit detection
+    let result = myGameRef.current.handleGesture(gestureToUse)
     
-    // Try original coordinates if transformed didn't work
-    if (!result) {
+    // On desktop, also try original coordinates as fallback
+    if (!result && !isMobile) {
       result = myGameRef.current.handleGesture(lastGesture)
-    }
-    
-    // Try a midpoint between original and transformed
-    if (!result) {
-      const midpoint: GestureEvent = {
-        ...lastGesture,
-        origin: {
-          x: (lastGesture.origin.x + transformed.origin.x) / 2,
-          y: (lastGesture.origin.y + transformed.origin.y) / 2,
-          z: lastGesture.origin.z,
-        },
-      }
-      result = myGameRef.current.handleGesture(midpoint)
     }
     if (result) {
       if (result.isBomb) {
@@ -430,9 +418,9 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         setMyCombo(newCombo)
         setMyMaxCombo(newMaxCombo)
 
-        // Report slice for opponent visualization (use transformed coords)
+        // Report slice for opponent visualization
         if (roomId) {
-          reportSlice(result.fruitId, { x: transformed.origin.x, y: transformed.origin.y })
+          reportSlice(result.fruitId, { x: gestureToUse.origin.x, y: gestureToUse.origin.y })
         }
       }
     }
