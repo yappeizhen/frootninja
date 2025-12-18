@@ -5,6 +5,11 @@
 A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand tracking to detect slicing gestures in real-time. No controllers needed—just wave your hand to play.
 
 <p align="center">
+  <img width="400" alt="Solo gameplay" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
+  <img width="400" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/ffcf61ad-81b0-444c-947c-f75004c6b266" />
+</p>
+
+<p align="center">
   <a href="https://frootninja.vercel.app/">
     <img src="https://img.shields.io/badge/▶_Play_Now-frootninja.vercel.app-ff6b6b?style=for-the-badge&logo=vercel&logoColor=white" alt="Play Now" />
   </a>
