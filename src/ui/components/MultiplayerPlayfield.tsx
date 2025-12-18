@@ -292,9 +292,13 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
           const game = new FruitGame(myCanvasRef.current)
           const rng = new SeededRNG(seed)
           game.setSeededRNG(rng)
-          // Use much larger hitbox for multiplayer mode
-          // Split-screen + aspect ratio differences + coordinate uncertainties make hitting harder
-          game.setSliceHitboxRadius(0.4)
+          
+          // Use VERY large hitbox for multiplayer mode
+          // On mobile, aspect ratio differences between video and screen cause major coordinate issues
+          // We compensate with an extremely forgiving hitbox
+          const isMobile = window.innerWidth < 1024
+          game.setSliceHitboxRadius(isMobile ? 0.65 : 0.45)
+          
           game.setOnFruitSpawn(() => {
             // Could sync spawn data if needed for opponent view
           })
@@ -386,11 +390,26 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       return
     }
 
-    // For hit detection, try BOTH the original and transformed coordinates
+    // For hit detection, try multiple coordinate variations
     // This handles edge cases where the transformation might be slightly off
     let result = myGameRef.current.handleGesture(transformed)
+    
+    // Try original coordinates if transformed didn't work
     if (!result) {
       result = myGameRef.current.handleGesture(lastGesture)
+    }
+    
+    // Try a midpoint between original and transformed
+    if (!result) {
+      const midpoint: GestureEvent = {
+        ...lastGesture,
+        origin: {
+          x: (lastGesture.origin.x + transformed.origin.x) / 2,
+          y: (lastGesture.origin.y + transformed.origin.y) / 2,
+          z: lastGesture.origin.z,
+        },
+      }
+      result = myGameRef.current.handleGesture(midpoint)
     }
     if (result) {
       if (result.isBomb) {
