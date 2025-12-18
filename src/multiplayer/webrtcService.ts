@@ -77,11 +77,15 @@ async function fetchIceServers(): Promise<RTCConfiguration> {
         const turnServers = await response.json()
         iceServers.push(...turnServers)
         console.log('[WebRTC] Fetched TURN servers from API ✓', turnServers.length, 'servers')
+      } else if (response.status === 402 || response.status === 429) {
+        // Quota exceeded or rate limited - fall back to STUN only
+        console.warn('[WebRTC] TURN quota exceeded (status', response.status, ') - using STUN only')
       } else {
         console.error('[WebRTC] API response error:', response.status)
       }
     } catch (error) {
       console.error('[WebRTC] Failed to fetch from API:', error)
+      console.log('[WebRTC] Falling back to STUN only')
     }
   } else {
     // Fallback to static credentials
