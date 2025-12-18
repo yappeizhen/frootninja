@@ -16,7 +16,7 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 
 <br />
 
-<img width="600" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
+<img width="400" alt="Frootninja Home Screen" src="https://github.com/user-attachments/assets/3eaa02d0-c029-4c23-b952-45658d075ba8" />
 
 
 <br /><br />
@@ -29,7 +29,7 @@ A browser-based Fruit Ninja clone that uses your webcam and AI-powered hand trac
 <sub><b>Solo Mode</b></sub>
 </td>
 <td align="center">
-<img width="400" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/c61f7a10-cb54-4cb5-967c-42289f110cc7" />
+<img width="500" alt="Multiplayer gameplay" src="https://github.com/user-attachments/assets/c61f7a10-cb54-4cb5-967c-42289f110cc7" />
 <br />
 <sub><b>Live Online Multiplayer</b></sub>
 </td>
@@ -90,7 +90,7 @@ Compete for the top spot on the global leaderboard.
 <tr>
 <td width="50%">
 
-### 🤝 Online Play
+### 🤝 Live Online Multiplayer
 
 Real-time multiplayer with seeded RNG for identical spawns. See your opponent's slices in real time.
 
