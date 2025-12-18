@@ -445,9 +445,13 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     if (lastOpponentSliceRef.current === slice.id) return
     lastOpponentSliceRef.current = slice.id
 
-    // Trigger slice effect on opponent's game
-    // The opponent's game has the same fruit spawns, so we can simulate the slice
-    opponentGameRef.current.triggerSliceEffectAtPosition?.(slice.position.x, slice.position.y)
+    // Trigger slice effect on opponent's game using fruit ID for reliable matching
+    // Falls back to position if ID doesn't match (e.g., timing differences)
+    opponentGameRef.current.triggerSliceEffectById?.(
+      slice.fruitId,
+      slice.position.x,
+      slice.position.y
+    )
   }, [isPlaying, opponent?.lastSlice])
 
   const handleGameEnd = useCallback(async () => {

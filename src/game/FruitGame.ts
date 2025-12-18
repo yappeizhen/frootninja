@@ -494,47 +494,60 @@ export class FruitGame {
   }
 
   /**
-   * Trigger a slice effect at a given screen position (for opponent visualization)
-   * This finds the nearest fruit to the position and slices it
+   * Trigger a slice effect for opponent visualization
+   * First tries to match by fruit ID (most reliable), then falls back to position
    */
-  triggerSliceEffectAtPosition(x: number, y: number) {
+  triggerSliceEffectById(fruitId: string, fallbackX: number, fallbackY: number) {
     if (!this.fruits.length) return
 
-    // Find nearest fruit to this screen position
-    let nearestFruit: FruitBody | null = null
-    let nearestDistance = Infinity
+    // First, try to find fruit by exact ID match (works with deterministic IDs)
+    let targetFruit = this.fruits.find(f => f.id === fruitId) || null
 
-    for (const fruit of this.fruits) {
-      const screen = this.projectToScreen(fruit)
-      const dx = screen.x - x
-      const dy = screen.y - y
-      const distance = Math.hypot(dx, dy)
-      if (distance < nearestDistance) {
-        nearestFruit = fruit
-        nearestDistance = distance
+    // If no ID match, fall back to position-based matching with generous threshold
+    if (!targetFruit) {
+      let nearestDistance = Infinity
+      for (const fruit of this.fruits) {
+        const screen = this.projectToScreen(fruit)
+        const dx = screen.x - fallbackX
+        const dy = screen.y - fallbackY
+        const distance = Math.hypot(dx, dy)
+        if (distance < nearestDistance) {
+          targetFruit = fruit
+          nearestDistance = distance
+        }
+      }
+      // Use generous threshold since positions may have drifted
+      if (nearestDistance > 0.4) {
+        targetFruit = null
       }
     }
 
-    // If we found a fruit within reasonable range, slice it
-    if (nearestFruit && nearestDistance < 0.2) {
-      // Create a synthetic gesture for the slice direction
-      const fakeGesture: GestureEvent = {
-        id: `opponent_${Date.now()}`,
-        type: 'slice',
-        origin: { x, y, z: 0.5 },
-        direction: { x: 0.5, y: 0.5 }, // Diagonal slice
-        speed: 1,
-        strength: 1,
-        hand: 'Right',
-        timestamp: Date.now(),
-      }
-      
-      if (nearestFruit.isBomb) {
-        this.explodeBomb(nearestFruit)
-      } else {
-        this.sliceFruit(nearestFruit, fakeGesture)
-      }
+    if (!targetFruit) return
+
+    // Create a synthetic gesture for the slice direction
+    const fakeGesture: GestureEvent = {
+      id: `opponent_${Date.now()}`,
+      type: 'slice',
+      origin: { x: fallbackX, y: fallbackY, z: 0.5 },
+      direction: { x: 0.5, y: 0.5 }, // Diagonal slice
+      speed: 1,
+      strength: 1,
+      hand: 'Right',
+      timestamp: Date.now(),
     }
+    
+    if (targetFruit.isBomb) {
+      this.explodeBomb(targetFruit)
+    } else {
+      this.sliceFruit(targetFruit, fakeGesture)
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   */
+  triggerSliceEffectAtPosition(x: number, y: number) {
+    this.triggerSliceEffectById('', x, y)
   }
 
   private tick = () => {
@@ -700,8 +713,10 @@ export class FruitGame {
       randFloat(-3, 3),
     )
 
+    // Use deterministic ID for multiplayer sync (based only on seeded RNG)
+    // This ensures both clients generate the same fruit IDs
     const fruitId = this.rng 
-      ? `f_${Date.now()}_${Math.floor(this.rng.next() * 10000)}`
+      ? `f_${Math.floor(this.rng.next() * 1000000)}_${Math.floor(this.rng.next() * 1000000)}`
       : THREE.MathUtils.generateUUID()
 
     const fruitBody: FruitBody = {
