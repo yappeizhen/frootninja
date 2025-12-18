@@ -506,7 +506,7 @@ export class FruitGame {
     }
 
     // If we found a fruit within reasonable range, slice it
-    if (nearestFruit && nearestDistance < 0.15) {
+    if (nearestFruit && nearestDistance < 0.3) {
       // Create a synthetic gesture for the slice direction
       const fakeGesture: GestureEvent = {
         id: `opponent_${Date.now()}`,
