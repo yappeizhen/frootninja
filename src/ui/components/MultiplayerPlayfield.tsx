@@ -14,6 +14,66 @@ import { GestureTrailCanvas } from './GestureTrailCanvas'
 import { MultiplayerHUD } from './MultiplayerHUD'
 import { MultiplayerGameOver } from './MultiplayerGameOver'
 import { WaitingRoom } from './WaitingRoom'
+import type { GestureEvent } from '@/types'
+
+/**
+ * Transform gesture coordinates from video frame space to canvas space.
+ * This is needed because object-fit: cover crops the video, but MediaPipe
+ * reports coordinates relative to the full video frame.
+ * 
+ * Note: CSS handles the mirroring (scaleX(-1)) for both video and canvas,
+ * so we only need to handle the aspect ratio cropping here.
+ */
+function transformGestureToCanvasSpace(
+  gesture: GestureEvent,
+  videoElement: HTMLVideoElement | null,
+  canvasElement: HTMLCanvasElement | null
+): GestureEvent {
+  if (!videoElement || !canvasElement) return gesture
+  
+  const videoWidth = videoElement.videoWidth
+  const videoHeight = videoElement.videoHeight
+  if (!videoWidth || !videoHeight) return gesture
+  
+  const containerWidth = canvasElement.clientWidth
+  const containerHeight = canvasElement.clientHeight
+  if (!containerWidth || !containerHeight) return gesture
+  
+  const videoAspect = videoWidth / videoHeight
+  const containerAspect = containerWidth / containerHeight
+  
+  let offsetX = 0
+  let offsetY = 0
+  let scaleX = 1
+  let scaleY = 1
+  
+  if (videoAspect > containerAspect) {
+    // Video is wider - horizontal cropping
+    const scaledVideoWidth = containerHeight * videoAspect
+    const cropAmount = (scaledVideoWidth - containerWidth) / scaledVideoWidth
+    offsetX = cropAmount / 2
+    scaleX = 1 - cropAmount
+  } else {
+    // Video is taller - vertical cropping
+    const scaledVideoHeight = containerWidth / videoAspect
+    const cropAmount = (scaledVideoHeight - containerHeight) / scaledVideoHeight
+    offsetY = cropAmount / 2
+    scaleY = 1 - cropAmount
+  }
+  
+  // Transform coordinates from video space to canvas space
+  const transformedX = (gesture.origin.x - offsetX) / scaleX
+  const transformedY = (gesture.origin.y - offsetY) / scaleY
+  
+  return {
+    ...gesture,
+    origin: {
+      x: Math.max(0, Math.min(1, transformedX)),
+      y: Math.max(0, Math.min(1, transformedY)),
+      z: gesture.origin.z,
+    },
+  }
+}
 
 interface MultiplayerPlayfieldProps {
   onExit: () => void
@@ -60,6 +120,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const [opponentVideoElement, setOpponentVideoElement] = useState<HTMLVideoElement | null>(null)
+  const [transformedGesture, setTransformedGesture] = useState<GestureEvent | null>(null)
 
   // WebRTC for opponent video - enable early and keep alive through finished state for rematch
   const { remoteStream, connectionState, reconnect: reconnectWebRTC } = useWebRTC({
@@ -257,6 +318,26 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [roomState, isPlaying, seed, gameEnded])
 
+  // ResizeObserver to keep game viewports synced when window resizes
+  useEffect(() => {
+    const myCanvas = myCanvasRef.current
+    const opponentCanvas = opponentCanvasRef.current
+    
+    const observer = new ResizeObserver(() => {
+      myGameRef.current?.syncViewport()
+      opponentGameRef.current?.syncViewport()
+    })
+    
+    if (myCanvas?.parentElement) {
+      observer.observe(myCanvas.parentElement)
+    }
+    if (opponentCanvas?.parentElement) {
+      observer.observe(opponentCanvas.parentElement)
+    }
+    
+    return () => observer.disconnect()
+  }, [isPlaying])
+
   // Separate effect for game timer to avoid cleanup issues
   useEffect(() => {
     if (isPlaying && roomState === 'playing') {
@@ -285,11 +366,24 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
   // Handle gestures for slicing
   useEffect(() => {
-    if (!isPlaying || !lastGesture || !myGameRef.current) {
+    if (!lastGesture) {
+      setTransformedGesture(null)
       return
     }
 
-    const result = myGameRef.current.handleGesture(lastGesture)
+    // Transform gesture coordinates from video space to canvas space
+    const transformed = transformGestureToCanvasSpace(
+      lastGesture,
+      videoElement,
+      myCanvasRef.current
+    )
+    setTransformedGesture(transformed)
+
+    if (!isPlaying || !myGameRef.current) {
+      return
+    }
+
+    const result = myGameRef.current.handleGesture(transformed)
     if (result) {
       if (result.isBomb) {
         // Hit a bomb
@@ -309,13 +403,13 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         setMyCombo(newCombo)
         setMyMaxCombo(newMaxCombo)
 
-        // Report slice for opponent visualization
+        // Report slice for opponent visualization (use transformed coords)
         if (roomId) {
-          reportSlice(result.fruitId, { x: lastGesture.origin.x, y: lastGesture.origin.y })
+          reportSlice(result.fruitId, { x: transformed.origin.x, y: transformed.origin.y })
         }
       }
     }
-  }, [lastGesture, isPlaying, myScore, myCombo, myMaxCombo])
+  }, [lastGesture, isPlaying, myScore, myCombo, myMaxCombo, videoElement])
 
   // Sync score immediately when it changes
   useEffect(() => {
@@ -511,7 +605,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
             muted
           />
           <canvas ref={myCanvasRef} className="multiplayer-playfield__canvas" />
-          <GestureTrailCanvas gesture={lastGesture ?? null} />
+          <GestureTrailCanvas gesture={transformedGesture} />
           {bombHit && <div className="bomb-flash-overlay" />}
           <div className="multiplayer-playfield__label">YOU</div>
         </div>
