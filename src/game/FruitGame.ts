@@ -506,7 +506,7 @@ export class FruitGame {
     }
 
     // If we found a fruit within reasonable range, slice it
-    if (nearestFruit && nearestDistance < 0.4) {
+    if (nearestFruit && nearestDistance < 0.15) {
       // Create a synthetic gesture for the slice direction
       const fakeGesture: GestureEvent = {
         id: `opponent_${Date.now()}`,
@@ -808,8 +808,8 @@ export class FruitGame {
 
   private pickGestureTarget(gesture: GestureEvent): FruitBody | null {
     if (!this.fruits.length) return null
-    // Large distance to handle aspect ratio mismatch in split-screen multiplayer
-    const maxDistance = 0.5
+    // Distance threshold for slice hitbox (normalized screen coords)
+    const maxDistance = 0.15
     let bestFruit: FruitBody | null = null
     let bestDistance = Infinity
     for (const fruit of this.fruits) {
