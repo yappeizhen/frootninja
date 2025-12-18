@@ -7,9 +7,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
+import { useInputModeStore } from '@/state/inputModeStore'
 import { useMultiplayerRoom, SeededRNG, updateRoomState, useWebRTC } from '@/multiplayer'
 import { FruitGame } from '@/game'
 import { useGestureDetection } from '@/services/useGestureDetection'
+import { useFallbackInput } from '@/services/useFallbackInput'
 import { GestureTrailCanvas } from './GestureTrailCanvas'
 import { MultiplayerHUD } from './MultiplayerHUD'
 import { MultiplayerGameOver } from './MultiplayerGameOver'
@@ -82,7 +84,9 @@ interface MultiplayerPlayfieldProps {
 export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const { videoRef, status: handTrackerStatus } = useHandData()
   const { lastGesture } = useGestureDetection()
-  const { resetCombo, reset } = useGameStore()
+  const { resetCombo, reset, registerGesture } = useGameStore()
+  const { inputMode, enableCameraMode } = useInputModeStore()
+  const isFallbackMode = inputMode === 'fallback'
   
   const {
     roomId,
@@ -125,6 +129,33 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null)
   const [opponentVideoElement, setOpponentVideoElement] = useState<HTMLVideoElement | null>(null)
   const [transformedGesture, setTransformedGesture] = useState<GestureEvent | null>(null)
+  const [fallbackGesture, setFallbackGesture] = useState<GestureEvent | null>(null)
+  const myGameContainerRef = useRef<HTMLDivElement>(null)
+
+  // Callback for fallback input gestures
+  const handleFallbackGesture = useCallback((gesture: GestureEvent) => {
+    if (!isPlaying) return
+    setFallbackGesture(gesture)
+    registerGesture(gesture)
+  }, [isPlaying, registerGesture])
+
+  // Set up fallback input
+  const { attachTo: attachFallbackInput } = useFallbackInput({
+    enabled: isFallbackMode && isPlaying,
+    onGesture: handleFallbackGesture,
+  })
+
+  // Attach fallback input to game container
+  useEffect(() => {
+    if (isFallbackMode) {
+      attachFallbackInput(myGameContainerRef.current)
+    } else {
+      attachFallbackInput(null)
+    }
+  }, [isFallbackMode, attachFallbackInput])
+
+  // Determine which gesture to use
+  const activeGesture = isFallbackMode ? fallbackGesture : lastGesture
 
   // WebRTC for opponent video - enable early and keep alive through finished state for rematch
   const { remoteStream, connectionState, reconnect: reconnectWebRTC } = useWebRTC({
@@ -374,17 +405,25 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
     }
   }, [isPlaying, roomState])
 
+  // Clear fallback gesture after processing
+  useEffect(() => {
+    if (fallbackGesture) {
+      const timer = setTimeout(() => setFallbackGesture(null), 50)
+      return () => clearTimeout(timer)
+    }
+  }, [fallbackGesture])
+
   // Handle gestures for slicing
   useEffect(() => {
-    if (!lastGesture) {
+    if (!activeGesture) {
       setTransformedGesture(null)
       return
     }
 
-    // Always transform coordinates to account for object-fit: cover cropping
-    // Unlike solo mode which uses a fixed 4:3 aspect ratio (matching webcam),
-    // multiplayer uses full screen dimensions which causes significant cropping
-    const transformed = transformGestureToCanvasSpace(lastGesture, videoElement, myCanvasRef.current)
+    // For fallback mode, use gesture directly; for camera mode, transform coordinates
+    const transformed = isFallbackMode 
+      ? activeGesture 
+      : transformGestureToCanvasSpace(activeGesture, videoElement, myCanvasRef.current)
     setTransformedGesture(transformed)
 
     if (!isPlaying || !myGameRef.current) {
@@ -393,8 +432,8 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
 
     // Try transformed coordinates first, then original as fallback
     let result = myGameRef.current.handleGesture(transformed)
-    if (!result) {
-      result = myGameRef.current.handleGesture(lastGesture)
+    if (!result && !isFallbackMode) {
+      result = myGameRef.current.handleGesture(activeGesture)
     }
     if (result) {
       if (result.isBomb) {
@@ -421,7 +460,7 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
         }
       }
     }
-  }, [lastGesture, isPlaying, myScore, myCombo, myMaxCombo, videoElement])
+  }, [activeGesture, isPlaying, myScore, myCombo, myMaxCombo, videoElement, isFallbackMode])
 
   // Throttled score sync - max once per 300ms (barely perceptible delay)
   useEffect(() => {
@@ -639,18 +678,37 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       {/* Split-screen game areas */}
       <div className="multiplayer-playfield__games">
         {/* My game (left side) */}
-        <div className="multiplayer-playfield__my-game">
-          <video
-            ref={handleVideoRef}
-            className="multiplayer-playfield__video"
-            autoPlay
-            playsInline
-            muted
-          />
+        <div 
+          ref={myGameContainerRef}
+          className={`multiplayer-playfield__my-game ${isFallbackMode ? 'multiplayer-playfield__my-game--fallback' : ''}`}
+        >
+          {/* Show video only in camera mode */}
+          {!isFallbackMode && (
+            <video
+              ref={handleVideoRef}
+              className="multiplayer-playfield__video"
+              autoPlay
+              playsInline
+              muted
+            />
+          )}
+          {/* Show gradient background in fallback mode */}
+          {isFallbackMode && <div className="playfield-fallback-bg" />}
           <canvas ref={myCanvasRef} className="multiplayer-playfield__canvas" />
           <GestureTrailCanvas gesture={transformedGesture} />
           {bombHit && <div className="bomb-flash-overlay" />}
-          <div className="multiplayer-playfield__label">YOU</div>
+          <div className="multiplayer-playfield__label">
+            YOU {isFallbackMode && '🖱️'}
+          </div>
+          {/* Fallback mode indicator */}
+          {isFallbackMode && isPlaying && (
+            <button 
+              className="multiplayer-fallback-switch"
+              onClick={enableCameraMode}
+            >
+              Use Camera
+            </button>
+          )}
         </div>
 
         {/* Divider */}

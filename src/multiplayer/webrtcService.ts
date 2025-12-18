@@ -292,22 +292,40 @@ export async function createPeerConnection(
       performIceRestart()
     }
   }
+  // Track disconnected timeout
+  let disconnectedTimeout: ReturnType<typeof setTimeout> | null = null
+  
   pc.oniceconnectionstatechange = () => {
     console.log('[WebRTC] ICE state:', pc.iceConnectionState)
-    if (pc.iceConnectionState === 'connected') {
+    
+    // Clear any pending disconnected timeout when state changes
+    if (disconnectedTimeout) {
+      clearTimeout(disconnectedTimeout)
+      disconnectedTimeout = null
+    }
+    
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
       // Reset restart attempts on successful connection
       iceRestartAttempts = 0
     }
-    // Attempt ICE restart if connection fails or disconnects
-    if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-      console.log('[WebRTC] ICE failed/disconnected, clearing cache and attempting restart in 2s...')
-      // Clear ICE server cache so next connection attempt gets fresh servers
+    
+    // Only restart immediately on "failed" state
+    if (pc.iceConnectionState === 'failed') {
+      console.log('[WebRTC] ICE failed, clearing cache and attempting restart...')
       clearIceServerCache()
-      setTimeout(() => {
-        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+      performIceRestart()
+    }
+    
+    // For "disconnected", wait longer - it often recovers on its own
+    if (pc.iceConnectionState === 'disconnected') {
+      console.log('[WebRTC] ICE disconnected, waiting 10s to see if it recovers...')
+      disconnectedTimeout = setTimeout(() => {
+        if (pc.iceConnectionState === 'disconnected') {
+          console.log('[WebRTC] ICE still disconnected after 10s, attempting restart...')
+          clearIceServerCache()
           performIceRestart()
         }
-      }, 2000)
+      }, 10000)
     }
   }
   pc.onsignalingstatechange = () => {

@@ -334,6 +334,35 @@ h1, h2, h3 {
   transform-origin: center;
 }
 
+/* Fallback mode (no camera) background */
+.playfield-fallback-bg {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255, 100, 50, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(100, 200, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(150, 50, 200, 0.08) 0%, transparent 60%),
+    linear-gradient(135deg, #0f0f18 0%, #1a0a20 25%, #0a1520 50%, #150a18 75%, #0c0c12 100%);
+  animation: fallbackBgPulse 8s ease-in-out infinite;
+}
+
+@keyframes fallbackBgPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.playfield-stage--fallback {
+  cursor: crosshair;
+}
+
+.playfield-stage--fallback .playfield-fruit-canvas {
+  cursor: crosshair;
+}
+
 .playfield-banner {
   position: absolute;
   left: 0.75rem;
@@ -3848,6 +3877,167 @@ h1, h2, h3 {
   }
 }
 
+/* Loading screen retry button */
+.loading-screen__retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.loading-screen__retry-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.4);
+}
+
+/* Loading screen fallback option */
+.loading-screen__fallback {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-screen__divider {
+  display: flex;
+  align-items: center;
+  width: 120px;
+  margin-bottom: 1rem;
+}
+
+.loading-screen__divider::before,
+.loading-screen__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+}
+
+.loading-screen__divider span {
+  padding: 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.loading-screen__fallback-btn {
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-screen__fallback-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.loading-screen__fallback-hint {
+  margin-top: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 200px;
+  opacity: 0.8;
+}
+
+/* Fallback mode indicator badge */
+.fallback-mode-badge {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fallback-mode-badge__icon {
+  font-size: 0.9rem;
+}
+
+.fallback-mode-badge__text {
+  opacity: 0.9;
+}
+
+.fallback-mode-badge__switch {
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: var(--primary);
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.fallback-mode-badge__switch:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile adjustments for fallback */
+@media (max-width: 480px) {
+  .loading-screen__fallback-btn {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.8rem;
+  }
+  
+  .loading-screen__fallback-hint {
+    font-size: 0.65rem;
+    max-width: 180px;
+  }
+  
+  .fallback-mode-badge {
+    font-size: 0.6rem;
+    padding: 0.3rem 0.75rem;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .leaderboard {
@@ -4256,6 +4446,17 @@ h1, h2, h3 {
   max-width: 280px;
 }
 
+.waiting-room__fallback-notice {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .game-btn--ready {
   background: var(--pastel-mint) !important;
   color: var(--bg-main) !important;
@@ -4413,6 +4614,38 @@ h1, h2, h3 {
   color: var(--text-muted);
   white-space: nowrap;
   z-index: 10;
+}
+
+/* Multiplayer fallback mode (mouse/touch input) */
+.multiplayer-playfield__my-game--fallback {
+  cursor: crosshair;
+}
+
+.multiplayer-playfield__my-game--fallback .multiplayer-playfield__canvas {
+  cursor: crosshair;
+}
+
+.multiplayer-fallback-switch {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 15;
+}
+
+.multiplayer-fallback-switch:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: var(--primary);
 }
 
 /* Hidden video for WebRTC stream capture during waiting */

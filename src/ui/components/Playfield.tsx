@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHandData } from '@/cv'
 import { useGameStore } from '@/state/gameStore'
 import { useMultiplayerStore } from '@/state/multiplayerStore'
+import { useInputModeStore } from '@/state/inputModeStore'
 import { FruitLayer } from '@/ui/components/FruitCanvas'
 import { StartScreen, GameOverScreen } from '@/ui/components/GameScreens'
 import { ChallengeBanner } from '@/ui/components/ChallengeBanner'
@@ -20,10 +21,12 @@ export const Playfield = () => {
   const [localVideo, setLocalVideo] = useState<HTMLVideoElement | null>(null)
   const { phase, isPlaying, score, highScore, challengeTarget, setChallengeTarget, syncHighScore, startRound, tickTimer, reset } = useGameStore()
   const { roomId, roomState } = useMultiplayerStore()
+  const { inputMode } = useInputModeStore()
   const timerRef = useRef<number | null>(null)
   const [prevHighScore, setPrevHighScore] = useState(highScore)
 
   const handsDetected = frame?.hands.length ?? 0
+  const isFallbackMode = inputMode === 'fallback'
   
   // Check if multiplayer is active (in a room and game is in progress)
   const isMultiplayerActive = roomId && (roomState === 'countdown' || roomState === 'playing' || roomState === 'finished')
@@ -105,6 +108,10 @@ export const Playfield = () => {
   const isNewHighScore = phase === 'game-over' && score > prevHighScore
 
   const banner = useMemo(() => {
+    // In fallback mode, don't show camera-related banners
+    if (isFallbackMode) {
+      return null
+    }
     if (error) {
       return {
         tone: 'warning' as const,
@@ -125,7 +132,7 @@ export const Playfield = () => {
       }
     }
     return null
-  }, [status, error, handsDetected, phase])
+  }, [status, error, handsDetected, phase, isFallbackMode])
 
   // Don't render solo playfield content when multiplayer is active
   if (isMultiplayerActive) {
@@ -133,14 +140,21 @@ export const Playfield = () => {
   }
 
   return (
-    <section className="playfield-stage">
-        <video
-          ref={handleVideoRef}
-          className="playfield-video"
-          autoPlay
-          muted
-          playsInline
-        />
+    <section className={`playfield-stage ${isFallbackMode ? 'playfield-stage--fallback' : ''}`}>
+        {/* Only show video when using camera mode */}
+        {!isFallbackMode && (
+          <video
+            ref={handleVideoRef}
+            className="playfield-video"
+            autoPlay
+            muted
+            playsInline
+          />
+        )}
+        
+        {/* Show gradient background in fallback mode */}
+        {isFallbackMode && <div className="playfield-fallback-bg" />}
+        
         <FruitLayer />
         
         {/* Challenge banner during gameplay */}
@@ -159,13 +173,13 @@ export const Playfield = () => {
           </button>
         )}
         
-        {/* Loading screen overlay */}
-        {status !== 'ready' && (
+        {/* Loading screen overlay - skip in fallback mode */}
+        {status !== 'ready' && !isFallbackMode && (
           <LoadingScreen status={status} error={error} onRetry={restart} />
         )}
         
-        {/* Game screens overlay */}
-        {phase === 'idle' && status === 'ready' && (
+        {/* Game screens overlay - show in fallback mode even if camera not ready */}
+        {phase === 'idle' && (status === 'ready' || isFallbackMode) && (
           <StartScreen onStart={handleStart} />
         )}
         {phase === 'game-over' && (

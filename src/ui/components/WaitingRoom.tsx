@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useMultiplayerRoom } from '@/multiplayer'
 import { generateInviteLink } from '@/multiplayer/useInviteLink'
+import { useInputModeStore } from '@/state/inputModeStore'
 
 interface WaitingRoomProps {
   onBack: () => void
@@ -24,6 +25,9 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
     setReady,
     startGame,
   } = useMultiplayerRoom()
+  
+  const { inputMode } = useInputModeStore()
+  const isFallbackMode = inputMode === 'fallback'
 
   const [copyStatus, setCopyStatus] = useState<'idle' | 'code-copied' | 'link-copied'>('idle')
   const [countdown, setCountdown] = useState<number | null>(null)
@@ -33,8 +37,8 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
     setReady(true)
   }, [setReady])
 
-  // Check if both players are present and video is connected
-  const canStart = isHost && opponent && localPlayer && isVideoConnected
+  // Check if both players are present and video is connected (or in fallback mode)
+  const canStart = isHost && opponent && localPlayer && (isVideoConnected || isFallbackMode)
 
   // Handle countdown when game is about to start
   useEffect(() => {
@@ -181,7 +185,7 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
             >
               {!opponent 
                 ? 'Waiting for opponent...' 
-                : !isVideoConnected 
+                : !isVideoConnected && !isFallbackMode
                   ? 'Connecting video...'
                   : 'Start Game'}
             </button>
@@ -189,10 +193,17 @@ export const WaitingRoom = ({ onBack, isVideoConnected = false }: WaitingRoomPro
           
           {!isHost && opponent && (
             <p className="waiting-room__status">
-              {isVideoConnected ? 'Waiting for host to start...' : 'Connecting video...'}
+              {isVideoConnected || isFallbackMode ? 'Waiting for host to start...' : 'Connecting video...'}
             </p>
           )}
         </div>
+        
+        {/* Fallback mode indicator */}
+        {isFallbackMode && (
+          <p className="waiting-room__fallback-notice">
+            🖱️ Playing with mouse/touch input
+          </p>
+        )}
 
         <button 
           className="game-btn game-btn--secondary waiting-room__leave-btn" 
