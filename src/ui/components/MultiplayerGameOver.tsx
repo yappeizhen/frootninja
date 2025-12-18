@@ -3,7 +3,10 @@
  * Shows final results after a multiplayer match with celebratory animations
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useUserStore } from '@/state/userStore'
+import { submitScore } from '@/services/leaderboardService'
+import { isFirebaseEnabled } from '@/services/firebase'
 
 interface MultiplayerGameOverProps {
   myScore: number
@@ -102,6 +105,24 @@ export const MultiplayerGameOver = ({
 }: MultiplayerGameOverProps) => {
   const animatedMyScore = useAnimatedCounter(myScore)
   const animatedOpponentScore = useAnimatedCounter(opponentScore)
+  const { username } = useUserStore()
+  const hasSubmittedRef = useRef(false)
+  
+  // Submit score to leaderboard when component mounts
+  useEffect(() => {
+    if (hasSubmittedRef.current) return
+    if (!isFirebaseEnabled() || !username || myScore <= 0) return
+    
+    hasSubmittedRef.current = true
+    
+    submitScore(username, myScore, 'multiplayer').then((success) => {
+      if (success) {
+        console.log('[MultiplayerGameOver] Score submitted to leaderboard:', myScore)
+      } else {
+        console.warn('[MultiplayerGameOver] Failed to submit score to leaderboard')
+      }
+    })
+  }, [username, myScore])
   
   const getResultState = () => {
     if (isTie) return 'tie'
