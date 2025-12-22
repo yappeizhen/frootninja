@@ -344,6 +344,7 @@ h1, h2, h3 {
     radial-gradient(circle at 50% 50%, rgba(150, 50, 200, 0.08) 0%, transparent 60%),
     linear-gradient(135deg, #0f0f18 0%, #1a0a20 25%, #0a1520 50%, #150a18 75%, #0c0c12 100%);
   animation: fallbackBgPulse 8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 @keyframes fallbackBgPulse {
@@ -356,6 +357,11 @@ h1, h2, h3 {
 }
 
 .playfield-stage--fallback {
+  cursor: crosshair;
+}
+
+.playfield-stage--fallback .playfield-overlay {
+  pointer-events: auto;
   cursor: crosshair;
 }
 
@@ -4623,6 +4629,7 @@ h1, h2, h3 {
 
 .multiplayer-playfield__my-game--fallback .multiplayer-playfield__canvas {
   cursor: crosshair;
+  pointer-events: none;
 }
 
 .multiplayer-fallback-switch {
