@@ -420,10 +420,25 @@ export const MultiplayerPlayfield = ({ onExit }: MultiplayerPlayfieldProps) => {
       return
     }
 
-    // For fallback mode, use gesture directly; for camera mode, transform coordinates
-    const transformed = isFallbackMode 
-      ? activeGesture 
-      : transformGestureToCanvasSpace(activeGesture, videoElement, myCanvasRef.current)
+    // For fallback mode, mirror X coordinate since canvas has scaleX(-1)
+    // For camera mode, transform coordinates from video space to canvas space
+    let transformed: GestureEvent
+    if (isFallbackMode) {
+      // Mirror X to match the scaleX(-1) transform on the canvas
+      transformed = {
+        ...activeGesture,
+        origin: {
+          ...activeGesture.origin,
+          x: 1 - activeGesture.origin.x,
+        },
+        direction: {
+          x: -activeGesture.direction.x,
+          y: activeGesture.direction.y,
+        },
+      }
+    } else {
+      transformed = transformGestureToCanvasSpace(activeGesture, videoElement, myCanvasRef.current)
+    }
     setTransformedGesture(transformed)
 
     if (!isPlaying || !myGameRef.current) {

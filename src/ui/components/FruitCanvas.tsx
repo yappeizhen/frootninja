@@ -45,7 +45,20 @@ export const FruitLayer = () => {
   }, [isFallbackMode, attachFallbackInput])
 
   // Use either camera gesture or fallback gesture
-  const activeGesture = isFallbackMode ? fallbackGesture : lastGesture
+  // For fallback mode, mirror X coordinate since canvas has scaleX(-1) transform
+  const activeGesture = isFallbackMode && fallbackGesture
+    ? {
+        ...fallbackGesture,
+        origin: {
+          ...fallbackGesture.origin,
+          x: 1 - fallbackGesture.origin.x,
+        },
+        direction: {
+          x: -fallbackGesture.direction.x,
+          y: fallbackGesture.direction.y,
+        },
+      }
+    : isFallbackMode ? null : lastGesture
 
   useEffect(() => {
     const canvas = canvasRef.current
