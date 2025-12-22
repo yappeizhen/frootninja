@@ -95,7 +95,16 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
     // Left Hand: Cyan/Ice | Right Hand: Electric Purple
     const glowColor = gesture.hand === 'Left' ? '#00ffff' : '#bf00ff'
     
-    const length = 0.25 + gesture.strength * 0.4 // Longer, faster slices
+    // Detect fallback/mouse input (uses "fallback-slice-" prefix)
+    const isFallbackInput = gesture.id.startsWith('fallback-')
+    
+    // Use smaller, more proportional trails for mouse input
+    // Hand gestures: 0.25 to 0.65 of screen (big sweeping motions)
+    // Mouse input: 0.06 to 0.15 of screen (precise movements)
+    const length = isFallbackInput
+      ? 0.06 + gesture.strength * 0.09
+      : 0.25 + gesture.strength * 0.4
+    
     const endX = clamp01(gesture.origin.x + gesture.direction.x * length)
     const endY = clamp01(gesture.origin.y + gesture.direction.y * length)
 
@@ -106,7 +115,7 @@ export const GestureTrailCanvas = ({ gesture }: { gesture: GestureEvent | null }
       end: { x: endX, y: endY },
       color: '#ffffff',
       glowColor,
-      width: 12 + gesture.strength * 8, // Razor thin to medium
+      width: isFallbackInput ? 8 + gesture.strength * 4 : 12 + gesture.strength * 8,
     })
   }, [gesture])
 
